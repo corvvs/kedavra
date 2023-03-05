@@ -66,10 +66,18 @@ function main() {
 
 
   // [細かいサイズパラメータの定義]
+  // 図の左端
+  const xLeftFigure = SvgParameter.leftMargin;
+  // 図の右端
+  const xRightFigure = SvgParameter.width - SvgParameter.margin;
+  // 図の上端
+  const yTopFigure = SvgParameter.topMargin;
+  // 図の下端
+  const yBottomFigure = SvgParameter.height - SvgParameter.margin;
   // 図の幅
-  const figureWidth = SvgParameter.width - SvgParameter.margin - SvgParameter.leftMargin;
+  const figureWidth = xRightFigure - xLeftFigure;
   // 図の高さ
-  const figureHeight = SvgParameter.height - SvgParameter.margin - SvgParameter.topMargin;
+  const figureHeight = yBottomFigure - yTopFigure;
   // ヒストグラムの最大階級の高さ
   const maxLevelHeight = figureHeight - SvgParameter.figureTopMargin;
   // ヒストグラム部分の幅
@@ -79,8 +87,8 @@ function main() {
 
   // [キャプション]
   {
-    const x_center = SvgParameter.leftMargin + figureWidth / 2;
-    const y_top = SvgParameter.topMargin;
+    const x_center = xLeftFigure + figureWidth / 2;
+    const y_top = yTopFigure;
     svg.text({
       x: x_center,
       y: y_top,
@@ -92,10 +100,10 @@ function main() {
 
   // [枠線]
   {
-    const frame_x_left = SvgParameter.leftMargin;
-    const frame_y_top = SvgParameter.topMargin;
-    const frame_x_right = SvgParameter.width - SvgParameter.margin;
-    const frame_y_bottom = SvgParameter.height - SvgParameter.margin;
+    const frame_x_left = xLeftFigure;
+    const frame_y_top = yTopFigure;
+    const frame_x_right = xRightFigure;
+    const frame_y_bottom = yBottomFigure;
     svg.rect({
       x: frame_x_left,
       y: frame_y_top,
@@ -110,8 +118,8 @@ function main() {
   // [目盛: 横軸]
   {
     _.range(histo.bins + 1).forEach(i => {
-      const x = SvgParameter.leftMargin + SvgParameter.figureSideMargin + levelsWidth / histo.bins * i;
-      const y_top = SvgParameter.height - SvgParameter.margin;
+      const x = xLeftFigure + SvgParameter.figureSideMargin + levelsWidth / histo.bins * i;
+      const y_top = yBottomFigure;
       const y_bottom = y_top + SvgParameter.yFineScalerSize;
       svg.line({
         x1: x,
@@ -128,10 +136,11 @@ function main() {
   // [目盛: 縦軸]
   {
     const xScalerUnit = 25;
-    const x_right = SvgParameter.leftMargin;
+    const x_right = xLeftFigure;
     const x_left = x_right - SvgParameter.xFineScalerSize;
     for (let i = 0; i * xScalerUnit < histo.max_count; ++i) {
       const y = SvgParameter.height - SvgParameter.margin - i * xScalerUnit * heightPerCount;
+      // 細かい目盛
       svg.line({
         x1: x_left,
         y1: y,
@@ -141,6 +150,7 @@ function main() {
         stroke_width: "1",
         fill: "none",
       });
+      // ラベル
       const x_text_right = x_left - 5;
       svg.text({
         x: x_text_right,
@@ -149,15 +159,28 @@ function main() {
         "text-anchor": "end",
         dy: 6,
       }, `${i * xScalerUnit}`);
+      // 点線
+      const x_dots_left = xLeftFigure;
+      const x_dots_right = xRightFigure;
+      svg.line({
+        x1: x_dots_left,
+        y1: y,
+        x2: x_dots_right,
+        y2: y,
+        stroke: "#000",
+        stroke_width: "1",
+        fill: "none",
+        "stroke-dasharray": [5,2],
+      });
     }
   }
 
   // [ヒストグラム本体]
   histo.counts.forEach((n, i) => {
-    const y_bottom = SvgParameter.height - SvgParameter.margin;
+    const y_bottom = yBottomFigure;
     const y_top = y_bottom - heightPerCount * n;
-    const x_left = SvgParameter.leftMargin + SvgParameter.figureSideMargin + levelsWidth / histo.bins * i;
-    const x_right = SvgParameter.leftMargin + SvgParameter.figureSideMargin + levelsWidth / histo.bins * (i + 1);
+    const x_left = xLeftFigure + SvgParameter.figureSideMargin + levelsWidth / histo.bins * i;
+    const x_right = xLeftFigure + SvgParameter.figureSideMargin + levelsWidth / histo.bins * (i + 1);
     svg.rect({
       x: x_left,
       y: y_top,
