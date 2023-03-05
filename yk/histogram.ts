@@ -33,10 +33,12 @@ const SvgParameter = {
  */
 function main() {
   // [treat ARGV]
-  const [dataset_path] = process.argv.slice(2);
+  const [dataset_path, feature] = process.argv.slice(2);
   if (!dataset_path) {
-    console.warn("no file");
-    return;
+    throw new Error("dataset unspecified");
+  }
+  if (!feature) {
+    throw new Error("feature unspecified");
   }
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
@@ -58,11 +60,16 @@ function main() {
   const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
 
   // [生徒データを階級値化する]
-  const histo = Stats.students_to_bins(raw_students, feature_stats[0], 40);
+  const selected_stat = feature_stats.find(f => f.name === feature);
+  if (!selected_stat) {
+    throw new Error("feature not found");
+  }
+  const histo = Stats.students_to_bins(raw_students, selected_stat, 40);
 
   // [SVGを生成する]
   const histo_svg = Graph.drawHistogram(histo);
 
+  // [ファイルに書き出す]
   fs.writeFileSync(SvgParameter.path, histo_svg);
 }
 
