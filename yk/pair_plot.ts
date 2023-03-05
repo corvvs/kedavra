@@ -14,18 +14,9 @@ const SvgBuilder = require('svg-builder')
  */
 function main() {
   // [treat ARGV]
-  const [dataset_path, feature_x, feature_y] = process.argv.slice(2);
+  const [dataset_path] = process.argv.slice(2);
   if (!dataset_path) {
     throw new Error("dataset unspecified");
-  }
-  if (!feature_x) {
-    throw new Error("feature unspecified");
-  }
-  if (!feature_y) {
-    throw new Error("feature unspecified");
-  }
-  if (feature_x === feature_y) {
-    throw new Error("spexified same feature for x and y");
   }
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
@@ -45,31 +36,45 @@ function main() {
 
   // [統計データの計算]
   const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
-  const feature_stat_x = feature_stats.find(f => f.name === feature_x);
-  if (!feature_stat_x) {
-    throw new Error("feature for x is invalid");
-  }
-  const feature_stat_y = feature_stats.find(f => f.name === feature_y);
-  if (!feature_stat_y) {
-    throw new Error("feature for x is invalid");
-  }
 
-  // [ペアリングデータの作成]
-  const paired_data = Stats.make_pair(feature_stat_x, feature_stat_y, raw_students);
-
-  // [SVGを生成する]
+  // [SVGの初期化]
+  const width = 600;
+  const height = 600;
   const box: Box = {
     p1: { x: 0, y: 0 },
-    p2: { x: 600, y: 600 },
+    p2: { x: width * float_features.length, y: height * float_features.length },
   };
   const dimension = Geometric.formDimensionByBox(box);
-  const svg = SvgBuilder.width(dimension.width).height(dimension.height);
-  Graph.drawScatter(svg, box, paired_data);
-  const scatter_svg = svg.render();
+  const svg = SvgBuilder.width(dimension.width).height(dimension.height);  
+
+  // [SVGの作成]
+
+  for (let i = 0; i < feature_stats.length; ++i) {
+    for (let j = 0; j < feature_stats.length; ++j) {
+      const stat_x = feature_stats[i];
+      const stat_y = feature_stats[j];
+      if (i === j) {
+        const histo = Stats.students_to_bins(raw_students, stat_x, 40);
+        const subbox = {
+          p1: { x: width * i, y: height * j },
+          p2: { x: width * (i + 1), y: height * (j + 1) },
+        };
+        Graph.drawHistogram(svg, subbox, histo);
+      } else {
+        const paired_data = Stats.make_pair(stat_x, stat_y, raw_students);
+        const subbox = {
+          p1: { x: width * i, y: height * j },
+          p2: { x: width * (i + 1), y: height * (j + 1) },
+        };
+        Graph.drawScatter(svg, subbox, paired_data);
+      }
+    }
+  }
+  const pair_plot_svg = svg.render();
 
   // [ファイルに書き出す]
-  const out_path = `scatter_${feature_x}_vs_${feature_y}.svg`;
-  fs.writeFileSync(out_path, scatter_svg);
+  const out_path = `pair_plot.svg`;
+  fs.writeFileSync(out_path, pair_plot_svg);
 }
 
 try {

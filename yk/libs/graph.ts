@@ -1,14 +1,9 @@
 import * as _ from "lodash"
 import { sprintf } from "sprintf-js";
-import { Histogram, PairedData } from './definitions';
+import { Box, Histogram, PairedData } from './definitions';
 import { Geometric } from './geometric';
 
-const SvgBuilder = require('svg-builder')
-
 const SvgParameter = {
-  path: "t.svg",
-  dimension: { width: 600, height: 600 },
-  wholeBox: Geometric.formBoxByDimension({ width: 600, height: 600 }),
   margin: {
     top: 50,
     bottom: 20,
@@ -22,9 +17,8 @@ const SvgParameter = {
 };
 
 export namespace Graph {
-  export function drawHistogram(histo: Histogram) {
+  export function drawHistogram(svg: any, box: Box, histo: Histogram) {
     // [SVGを生成する]
-    const svg = SvgBuilder.width(SvgParameter.dimension.width).height(SvgParameter.dimension.height);
     const figureInset = {
       top: 50,
       bottom: 20,
@@ -40,7 +34,7 @@ export namespace Graph {
     };
 
     // [細かいサイズパラメータの定義]
-    const figureOutBox = Geometric.formBoxByInset(SvgParameter.wholeBox, figureInset);
+    const figureOutBox = Geometric.formBoxByInset(box, figureInset);
     const figureInBox = Geometric.formBoxByInset(figureOutBox, HistogramInset);
     const { width: figureWidth } = Geometric.formDimensionByBox(figureOutBox);
     const figureInDimension = Geometric.formDimensionByBox(figureInBox);
@@ -154,15 +148,10 @@ export namespace Graph {
         height: y_bottom - y_top,
       });
     });
-
-    return svg.render();
   }
 
-  export function drawScatter(paired_data: PairedData) {
+  export function drawScatter(svg: any, box: Box, paired_data: PairedData) {
     // [SVGを生成する]
-    const svg = SvgBuilder.width(SvgParameter.dimension.width).height(SvgParameter.dimension.height);
-    const wholeBox = Geometric.formBoxByDimension(SvgParameter.dimension);
-
     const figureInset = {
       top: 25,
       bottom: 85,
@@ -180,28 +169,28 @@ export namespace Graph {
     const scalerSize = 8;
 
     // [細かいサイズパラメータの定義]
-    const figureOutBox = Geometric.formBoxByInset(SvgParameter.wholeBox, figureInset);
+    const figureOutBox = Geometric.formBoxByInset(box, figureInset);
     const figureInBox = Geometric.formBoxByInset(figureOutBox, ScatterInset);
     const { width: figureWidth } = Geometric.formDimensionByBox(figureOutBox);
     const figureInDimension = Geometric.formDimensionByBox(figureInBox);
-
+    const dimension = Geometric.formDimensionByBox(box);
     // [全体枠線]
-    {
-      svg.rect({
-        x: wholeBox.p1.x,
-        y: wholeBox.p1.y,
-        width: SvgParameter.dimension.width,
-        height: SvgParameter.dimension.height,
-        stroke: "#000",
-        stroke_width: "1",
-        fill: "none",
-      });
-    }
+    // {
+    //   svg.rect({
+    //     x: box.p1.x,
+    //     y: box.p1.y,
+    //     width: dimension.width,
+    //     height: dimension.height,
+    //     stroke: "#000",
+    //     stroke_width: "1",
+    //     fill: "none",
+    //   });
+    // }
 
     // [ラベル]
     {
       {
-        const x_center = wholeBox.p1.x + 15;
+        const x_center = box.p1.x + 15;
         const y_center = (figureOutBox.p1.y + figureOutBox.p2.y) / 2;
         svg.text({
           x: x_center,
@@ -213,7 +202,7 @@ export namespace Graph {
       }
       {
         const x_center = (figureOutBox.p1.x + figureOutBox.p2.x) / 2;
-        const y_center = wholeBox.p2.y - 15;
+        const y_center = box.p2.y - 15;
         svg.text({
           x: x_center,
           y: y_center,
@@ -340,7 +329,5 @@ export namespace Graph {
         });
       });
     }
-
-    return svg.render();
   }
 }
