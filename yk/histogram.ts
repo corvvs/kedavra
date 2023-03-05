@@ -3,6 +3,10 @@ import * as fs from 'fs';
 import { Parser } from './libs/parse';
 import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
+import { Geometric } from "./libs/geometric";
+import { Box } from "./libs/definitions";
+
+const SvgBuilder = require('svg-builder')
 
 /**
  * 便宜上のメイン関数
@@ -44,10 +48,18 @@ function main() {
   const histo = Stats.students_to_bins(raw_students, selected_stat, 40);
 
   // [SVGを生成する]
-  const histo_svg = Graph.drawHistogram(histo);
+  const box: Box = {
+    p1: { x: 0, y: 0 },
+    p2: { x: 600, y: 600 },
+  };
+  const dimension = Geometric.formDimensionByBox(box);
+  const svg = SvgBuilder.width(dimension.width).height(dimension.height);
+  Graph.drawHistogram(svg, box, histo);
+  const histo_svg = svg.render();
 
   // [ファイルに書き出す]
-  fs.writeFileSync("t.svg", histo_svg);
+  const out_path = `historgram_${feature}.svg`;
+  fs.writeFileSync(out_path, histo_svg);
 }
 
 try {

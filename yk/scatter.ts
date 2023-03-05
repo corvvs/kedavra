@@ -3,6 +3,10 @@ import * as fs from 'fs';
 import { Parser } from './libs/parse';
 import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
+import { Box } from "./libs/definitions";
+import { Geometric } from "./libs/geometric";
+
+const SvgBuilder = require('svg-builder')
 
 /**
  * 便宜上のメイン関数
@@ -54,7 +58,14 @@ function main() {
   const paired_data = Stats.make_pair(feature_stat_x, feature_stat_y, raw_students);
 
   // [SVGを生成する]
-  const scatter_svg = Graph.drawScatter(paired_data);
+  const box: Box = {
+    p1: { x: 0, y: 0 },
+    p2: { x: 600, y: 600 },
+  };
+  const dimension = Geometric.formDimensionByBox(box);
+  const svg = SvgBuilder.width(dimension.width).height(dimension.height);
+  Graph.drawScatter(svg, box, paired_data);
+  const scatter_svg = svg.render();
 
   // [ファイルに書き出す]
   const out_path = `scatter_${feature_x}_vs_${feature_y}.svg`;
