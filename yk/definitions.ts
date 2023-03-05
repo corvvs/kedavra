@@ -1,5 +1,9 @@
 // データ型などを定義する
 
+/**
+ * 生徒データ
+ * Rawじゃないやつは今後登場するのだろうか・・・
+ */
 export type StudentRaw = {
   index: number;
   hogwarts_house: string;
@@ -12,6 +16,9 @@ export type StudentRaw = {
   };
 }
 
+/**
+ * ある特徴量に関する統計データ
+ */
 export type FeatureStats = {
   name: string;
   // 総数

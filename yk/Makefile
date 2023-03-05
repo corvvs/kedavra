@@ -1,8 +1,13 @@
 
 
-all: describe
-	node describe.js datasets/dataset_train.csv
+all: svg
+	node svg.js
 
 describe:
 	tsc $@.ts
 
+histogram:
+	tsc $@.ts
+
+svg:
+	tsc $@.ts
