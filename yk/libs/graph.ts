@@ -199,6 +199,11 @@ export namespace Graph {
       });
     }
 
+    // [目盛:x]
+    {
+      
+    }
+
     // [散布図本体]
     {
       const x_size = (paired_data.box.p2.x - paired_data.box.p1.x) / 2;
@@ -207,10 +212,10 @@ export namespace Graph {
       const y_center = (paired_data.box.p2.y + paired_data.box.p1.y) / 2;
       paired_data.pairs.forEach(p => {
         svg.circle({
-          r: 5,
+          r: 3,
           cx: figureInBox.p1.x + (p.x - x_center) / x_size * figureInDimension.width / 2 + figureInDimension.width / 2,
           cy: figureInBox.p1.y + (p.y - y_center) / y_size * figureInDimension.height / 2 + figureInDimension.height / 2,
-          fill: "none",
+          fill: "#fff",
           stroke: "#000",
         });
       });

@@ -1,7 +1,7 @@
 import * as _ from "lodash"
 import * as fs from 'fs';
-import { Parser } from './parse';
-import { Stats } from "./stats";
+import { Parser } from './libs/parse';
+import { Stats } from "./libs/stats";
 
 /**
  * 便宜上のメイン関数
