@@ -112,6 +112,7 @@ export namespace Stats {
       counts[i] += 1;
     });
     return {
+      feature,
       stat,
       bins,
       counts,

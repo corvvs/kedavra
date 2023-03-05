@@ -40,6 +40,7 @@ export type FeatureStats = {
 };
 
 export type Histogram = {
+  feature: string,
   stat: FeatureStats;
   bins: number;
   counts: number[];
