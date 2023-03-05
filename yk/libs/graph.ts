@@ -1,4 +1,5 @@
 import * as _ from "lodash"
+import { sprintf } from "sprintf-js";
 import { Histogram, PairedData } from './definitions';
 import { Geometric } from './geometric';
 
@@ -24,7 +25,6 @@ export namespace Graph {
   export function drawHistogram(histo: Histogram) {
     // [SVGを生成する]
     const svg = SvgBuilder.width(SvgParameter.dimension.width).height(SvgParameter.dimension.height);
-
     const figureInset = {
       top: 50,
       bottom: 20,
@@ -161,26 +161,67 @@ export namespace Graph {
   export function drawScatter(paired_data: PairedData) {
     // [SVGを生成する]
     const svg = SvgBuilder.width(SvgParameter.dimension.width).height(SvgParameter.dimension.height);
+    const wholeBox = Geometric.formBoxByDimension(SvgParameter.dimension);
 
     const figureInset = {
-      top: 50,
-      bottom: 50,
-      left: 50,
-      right: 50,
+      top: 25,
+      bottom: 85,
+      left: 85,
+      right: 25,
     };
 
     const ScatterInset = {
-      top: 20,
-      bottom: 20,
-      left: 20,
-      right: 20,
+      top: 10,
+      bottom: 10,
+      left: 10,
+      right: 10,
     };
+
+    const scalerSize = 8;
 
     // [細かいサイズパラメータの定義]
     const figureOutBox = Geometric.formBoxByInset(SvgParameter.wholeBox, figureInset);
     const figureInBox = Geometric.formBoxByInset(figureOutBox, ScatterInset);
     const { width: figureWidth } = Geometric.formDimensionByBox(figureOutBox);
     const figureInDimension = Geometric.formDimensionByBox(figureInBox);
+
+    // [全体枠線]
+    {
+      svg.rect({
+        x: wholeBox.p1.x,
+        y: wholeBox.p1.y,
+        width: SvgParameter.dimension.width,
+        height: SvgParameter.dimension.height,
+        stroke: "#000",
+        stroke_width: "1",
+        fill: "none",
+      });
+    }
+
+    // [ラベル]
+    {
+      {
+        const x_center = wholeBox.p1.x + 15;
+        const y_center = (figureOutBox.p1.y + figureOutBox.p2.y) / 2;
+        svg.text({
+          x: x_center,
+          y: y_center,
+          "font-size": 16,
+          "text-anchor": "middle",
+          transform: `rotate(90, ${x_center}, ${y_center})`,
+        }, paired_data.feature_y.name);
+      }
+      {
+        const x_center = (figureOutBox.p1.x + figureOutBox.p2.x) / 2;
+        const y_center = wholeBox.p2.y - 15;
+        svg.text({
+          x: x_center,
+          y: y_center,
+          "font-size": 16,
+          "text-anchor": "middle",
+        }, paired_data.feature_x.name);
+      }
+    }
 
     // [枠線]
     {
@@ -201,7 +242,86 @@ export namespace Graph {
 
     // [目盛:x]
     {
-      
+      const division = 5;
+      const y_top = figureOutBox.p1.y;
+      const y_mid = figureOutBox.p2.y;
+      const y_bottom = figureOutBox.p2.y + scalerSize;
+      _.range(division + 1).map(i => {
+        // 目盛線
+        const x = figureOutBox.p1.x + i / division * figureWidth;
+        svg.line({
+          x1: x,
+          y1: y_mid,
+          x2: x,
+          y2: y_bottom,
+          stroke: "#000",
+          fill: "none",
+        });
+        // 点線
+        svg.line({
+          x1: x,
+          y1: y_top,
+          x2: x,
+          y2: y_mid,
+          stroke: "#000",
+          stroke_width: "1",
+          fill: "none",
+          "stroke-dasharray": [5,2],
+        });
+        const xr = (paired_data.feature_x.p100 - paired_data.feature_x.p0) / 2 * (x * 2 - (figureOutBox.p2.x + figureOutBox.p1.x)) / (figureOutBox.p2.x - figureOutBox.p1.x) + paired_data.feature_x.p0;
+        const dy = 15;
+        // ラベル
+        svg.text({
+          x: x,
+          y: y_bottom,
+          dy,
+          "font-size": 10,
+          "text-anchor": "middle",
+        }, sprintf("%1.2f", xr));
+      });
+    }
+
+    // [目盛:y]
+    {
+      const division = 5;
+      const x_top = figureOutBox.p2.x;
+      const x_mid = figureOutBox.p1.x;
+      const x_bottom = figureOutBox.p1.x - scalerSize;
+      _.range(division + 1).map(i => {
+        // 目盛線
+        const y = figureOutBox.p1.y + i / division * figureWidth;
+        svg.line({
+          x1: x_mid,
+          y1: y,
+          x2: x_bottom,
+          y2: y,
+          stroke: "#000",
+          fill: "none",
+        });
+        // 点線
+        svg.line({
+          x1: x_top,
+          y1: y,
+          x2: x_mid,
+          y2: y,
+          stroke: "#000",
+          stroke_width: "1",
+          fill: "none",
+          "stroke-dasharray": [5,2],
+        });
+        const yr = (paired_data.feature_y.p100 - paired_data.feature_y.p0) / 2 * (y * 2 - (figureOutBox.p2.y + figureOutBox.p1.y)) / (figureOutBox.p2.y - figureOutBox.p1.y) + paired_data.feature_y.p0;
+        const dx = -5;
+        const dy = 5;
+        // ラベル
+        svg.text({
+          x: x_bottom,
+          dx,
+          y: y,
+          dy,
+          "font-size": 10,
+          "text-anchor": "end",
+        }, sprintf("%1.2f", yr));
+      });
     }
 
     // [散布図本体]
@@ -212,7 +332,7 @@ export namespace Graph {
       const y_center = (paired_data.box.p2.y + paired_data.box.p1.y) / 2;
       paired_data.pairs.forEach(p => {
         svg.circle({
-          r: 3,
+          r: 4,
           cx: figureInBox.p1.x + (p.x - x_center) / x_size * figureInDimension.width / 2 + figureInDimension.width / 2,
           cy: figureInBox.p1.y + (p.y - y_center) / y_size * figureInDimension.height / 2 + figureInDimension.height / 2,
           fill: "#fff",
