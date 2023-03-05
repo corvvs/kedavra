@@ -39,6 +39,9 @@ export type FeatureStats = {
   p100: number;
 };
 
+/**
+ * 階級値データ
+ */
 export type Histogram = {
   feature: string,
   stat: FeatureStats;
@@ -47,3 +50,41 @@ export type Histogram = {
   max_count: number;
 };
 
+/**
+ * 2次元の点
+ */
+export type Vector2D = {
+  x: number;
+  y: number;
+};
+
+/**
+ * 矩形領域
+ */
+export type Box = {
+  p1: Vector2D;
+  p2: Vector2D;
+};
+
+export type Dimension = {
+  width: number;
+  height: number;
+};
+
+/**
+ * インセット, すなわちある矩形領域の境界から内部方向への「余白」
+ */
+export type Inset = {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+};
+
+export type PairedData = {
+  feature_x: FeatureStats;
+  feature_y: FeatureStats;
+  count: number;
+  pairs: Vector2D[];
+  box: Box;
+};
