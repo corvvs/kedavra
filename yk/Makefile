@@ -1,7 +1,7 @@
 
 
 all: scatter
-	node scatter.js datasets/dataset_train.csv
+	node scatter.js datasets/dataset_train.csv transfiguration care_of_magical_creatures
 
 describe:
 	tsc $@.ts

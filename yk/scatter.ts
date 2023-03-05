@@ -10,13 +10,19 @@ import { Graph } from "./libs/graph";
  */
 function main() {
   // [treat ARGV]
-  const [dataset_path, feature] = process.argv.slice(2);
+  const [dataset_path, feature_x, feature_y] = process.argv.slice(2);
   if (!dataset_path) {
     throw new Error("dataset unspecified");
   }
-  // if (!feature) {
-  //   throw new Error("feature unspecified");
-  // }
+  if (!feature_x) {
+    throw new Error("feature unspecified");
+  }
+  if (!feature_y) {
+    throw new Error("feature unspecified");
+  }
+  if (feature_x === feature_y) {
+    throw new Error("spexified same feature for x and y");
+  }
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
 
@@ -35,16 +41,24 @@ function main() {
 
   // [統計データの計算]
   const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
-  const [feature_x, feature_y] = [feature_stats[0], feature_stats[1]];
+  const feature_stat_x = feature_stats.find(f => f.name === feature_x);
+  if (!feature_stat_x) {
+    throw new Error("feature for x is invalid");
+  }
+  const feature_stat_y = feature_stats.find(f => f.name === feature_y);
+  if (!feature_stat_y) {
+    throw new Error("feature for x is invalid");
+  }
 
   // [ペアリングデータの作成]
-  const paired_data = Stats.make_pair(feature_x, feature_y, raw_students);
+  const paired_data = Stats.make_pair(feature_stat_x, feature_stat_y, raw_students);
 
   // [SVGを生成する]
   const scatter_svg = Graph.drawScatter(paired_data);
 
   // [ファイルに書き出す]
-  fs.writeFileSync("s.svg", scatter_svg);
+  const out_path = `scatter_${feature_x}_vs_${feature_y}.svg`;
+  fs.writeFileSync(out_path, scatter_svg);
 }
 
 try {
