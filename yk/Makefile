@@ -1,7 +1,7 @@
 
 
-all: scatter
-	node scatter.js datasets/dataset_train.csv transfiguration care_of_magical_creatures
+all: pair_plot
+	node pair_plot.js datasets/dataset_train.csv
 
 describe:
 	tsc $@.ts
@@ -10,6 +10,9 @@ histogram:
 	tsc $@.ts
 
 scatter:
+	tsc $@.ts
+
+pair_plot:
 	tsc $@.ts
 
 svg:
