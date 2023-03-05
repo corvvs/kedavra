@@ -2,7 +2,9 @@ import * as _ from "lodash"
 import * as fs from 'fs';
 import { Parser } from './parse';
 import { Stats } from "./stats";
+import { StudentRaw, FeatureStats, Histogram } from "./definitions";
 const SvgBuilder = require('svg-builder')
+
 
 /**
  * 便宜上のメイン関数
@@ -31,7 +33,13 @@ function main() {
   // [カテゴリカル変数の数値化]
   raw_students.forEach(r => Parser.quantize_categoricals(r));
 
+  // [統計データの計算]
+  const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
 
+  // [生徒データを階級値化する]
+  const histo = Stats.students_to_bins(raw_students, feature_stats[0], 40);
+
+  console.log(histo);
 
 }
 

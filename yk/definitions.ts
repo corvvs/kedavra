@@ -38,3 +38,10 @@ export type FeatureStats = {
   // 最大値(100パーセンタイル値)
   p100: number;
 };
+
+export type Histogram = {
+  stat: FeatureStats;
+  bins: number;
+  counts: number[];
+};
+

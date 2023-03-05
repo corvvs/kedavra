@@ -1,6 +1,6 @@
 import * as _ from "lodash"
 import { sprintf } from "sprintf-js";
-import { StudentRaw, FeatureStats } from "./definitions"
+import { StudentRaw, FeatureStats, Histogram } from "./definitions"
 
 // 統計量をあつかう
 
@@ -86,5 +86,35 @@ export namespace Stats {
       })
       console.log(line);
     });
+  }
+
+  /**
+   * 生徒データから, 特定の特徴量を選んで階級化する.
+   * 対象の特徴量は引数`stats`で指定する.
+   * @param students 生徒データ
+   * @param stat 階級化する特徴量の統計データ
+   * @param bins 階級数; 1以上であること. 整数でない場合は切り捨てる.
+   */
+  export function students_to_bins(students: StudentRaw[], stat: FeatureStats, bins: number): Histogram {
+    const n_bins = Math.floor(bins);
+    if (n_bins < 1) {
+      throw new Error("binsが1以上ではありません");
+    }
+    
+    const feature = stat.name;
+    const [min, max] = [stat.p0, stat.p100];
+    const size = max - min;
+    const counts = _.range(bins).map(s => 0);
+    students.forEach(s => {
+      const val = s.scores[feature];
+      if (!_.isFinite(val)){ return; } // おかしな値(nan, infty, null, ...)をはじく
+      const i = Math.min(Math.floor((val - min) / size * bins), bins - 1);
+      counts[i] += 1;
+    });
+    return {
+      stat,
+      bins,
+      counts,
+    };
   }
 };

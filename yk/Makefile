@@ -1,7 +1,7 @@
 
 
-all: svg
-	node svg.js
+all: histogram
+	node histogram.js datasets/dataset_train.csv
 
 describe:
 	tsc $@.ts
