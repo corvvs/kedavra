@@ -81,10 +81,14 @@ export type Inset = {
   right: number;
 };
 
+export type Vector2DPlus = Vector2D & {
+  fill?: string;
+};
+
 export type PairedData = {
   feature_x: FeatureStats;
   feature_y: FeatureStats;
   count: number;
-  pairs: Vector2D[];
+  pairs: Vector2DPlus[];
   box: Box;
 };

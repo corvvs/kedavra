@@ -324,7 +324,7 @@ export namespace Graph {
           r: 4,
           cx: figureInBox.p1.x + (p.x - x_center) / x_size * figureInDimension.width / 2 + figureInDimension.width / 2,
           cy: figureInBox.p1.y + (p.y - y_center) / y_size * figureInDimension.height / 2 + figureInDimension.height / 2,
-          fill: "#fff",
+          fill: p.fill || "#fff",
           stroke: "#000",
         });
       });
