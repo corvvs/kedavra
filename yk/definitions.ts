@@ -43,5 +43,6 @@ export type Histogram = {
   stat: FeatureStats;
   bins: number;
   counts: number[];
+  max_count: number;
 };
 

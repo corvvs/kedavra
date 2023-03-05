@@ -115,6 +115,7 @@ export namespace Stats {
       stat,
       bins,
       counts,
+      max_count: Math.max(...counts),
     };
   }
 };
