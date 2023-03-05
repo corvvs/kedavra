@@ -1,6 +1,6 @@
 import * as _ from "lodash"
 import { sprintf } from "sprintf-js";
-import { StudentRaw, FeatureStats, Histogram } from "./definitions"
+import { StudentRaw, FeatureStats, Histogram, Vector2D, Box, PairedData } from "./definitions"
 
 // 統計量をあつかう
 
@@ -117,6 +117,32 @@ export namespace Stats {
       bins,
       counts,
       max_count: Math.max(...counts),
+    };
+  }
+
+  export function make_pair(
+    feature_x: FeatureStats,
+    feature_y: FeatureStats,
+    students: StudentRaw[]
+  ): PairedData {
+    let count = 0;
+    const pairs: Vector2D[] = _(students).map(s => {
+      const x = s.scores[feature_x.name];
+      const y = s.scores[feature_y.name];
+      if (!_.isFinite(x) || !_.isFinite(y)) { return null; }
+      count += 1;
+      return { x, y };
+    }).compact().value();
+    const box: Box = {
+      p1: { x: feature_x.p0, y: feature_y.p0 },
+      p2: { x: feature_x.p100, y: feature_y.p100 },
+    };
+    return {
+      feature_x,
+      feature_y,
+      count,
+      pairs,
+      box,
     };
   }
 };

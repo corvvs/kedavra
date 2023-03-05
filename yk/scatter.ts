@@ -14,9 +14,9 @@ function main() {
   if (!dataset_path) {
     throw new Error("dataset unspecified");
   }
-  if (!feature) {
-    throw new Error("feature unspecified");
-  }
+  // if (!feature) {
+  //   throw new Error("feature unspecified");
+  // }
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
 
@@ -35,19 +35,16 @@ function main() {
 
   // [統計データの計算]
   const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
+  const [feature_x, feature_y] = [feature_stats[0], feature_stats[1]];
 
-  // [生徒データを階級値化する]
-  const selected_stat = feature_stats.find(f => f.name === feature);
-  if (!selected_stat) {
-    throw new Error("feature not found");
-  }
-  const histo = Stats.students_to_bins(raw_students, selected_stat, 40);
+  // [ペアリングデータの作成]
+  const paired_data = Stats.make_pair(feature_x, feature_y, raw_students);
 
   // [SVGを生成する]
-  const histo_svg = Graph.drawHistogram(histo);
+  const scatter_svg = Graph.drawScatter(paired_data);
 
   // [ファイルに書き出す]
-  fs.writeFileSync("t.svg", histo_svg);
+  fs.writeFileSync("s.svg", scatter_svg);
 }
 
 try {
