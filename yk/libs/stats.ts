@@ -83,7 +83,7 @@ export namespace Stats {
       feature_stats.forEach(s => {
         const w = Math.max(s.name.length, 14);
         line += sprintf(` %${w}.6f`, s[key]);
-      })
+      });
       console.log(line);
     });
   }
@@ -131,7 +131,7 @@ export namespace Stats {
       const y = s.scores[feature_y.name];
       if (!_.isFinite(x) || !_.isFinite(y)) { return null; }
       count += 1;
-      return { x, y };
+      return { x, y, fill: colorForStudent(s) };
     }).compact().value();
     const box: Box = {
       p1: { x: feature_x.p0, y: feature_y.p0 },
@@ -144,5 +144,21 @@ export namespace Stats {
       pairs,
       box,
     };
+  }
+
+  function colorForStudent(student: StudentRaw) {
+    if (student.scores.is_r) {
+      return "royalblue";
+    }
+    if (student.scores.is_s) {
+      return "lightgreen";
+    }
+    if (student.scores.is_g) {
+      return "red";
+    }
+    if (student.scores.is_h) {
+      return "gold";
+    }
+    return null;
   }
 };

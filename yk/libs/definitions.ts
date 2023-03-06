@@ -58,6 +58,11 @@ export type Vector2D = {
   y: number;
 };
 
+export type Affine2D = {
+  xx: number; xy: number; xt: number;
+  yx: number; yy: number; yt: number;
+};
+
 /**
  * 矩形領域
  */
@@ -81,10 +86,32 @@ export type Inset = {
   right: number;
 };
 
+export type Vector2DPlus = Vector2D & {
+  fill?: string;
+};
+
 export type PairedData = {
   feature_x: FeatureStats;
   feature_y: FeatureStats;
   count: number;
-  pairs: Vector2D[];
+  pairs: Vector2DPlus[];
   box: Box;
+};
+
+type Color = string | "none";
+type Size = string | number;
+
+export type ShapeOption = {
+  stroke?: Color;
+  "stroke-width"?: Size;
+  fill?: Color;
+};
+
+export type TextOption = {
+  font?: string;
+  "font-weight"?: "bold" | string;
+};
+
+export type DrawOption = ShapeOption & {
+
 };
