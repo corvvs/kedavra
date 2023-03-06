@@ -1,4 +1,4 @@
-
+NAMES	:= describe histogram scatter pair_plot
 
 all: pair_plot
 	node pair_plot.js datasets/dataset_train.csv

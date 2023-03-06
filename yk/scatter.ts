@@ -64,7 +64,7 @@ function main() {
   };
   const dimension = Geometric.formDimensionByBox(box);
   const svg = SvgBuilder.width(dimension.width).height(dimension.height);
-  Graph.drawScatter(svg, box, paired_data);
+  Graph.drawScatter(svg, box, paired_data, { xLabel: true, yLabel: true });
   const scatter_svg = svg.render();
 
   // [ファイルに書き出す]

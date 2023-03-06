@@ -53,20 +53,21 @@ function main() {
     for (let j = 0; j < feature_stats.length; ++j) {
       const stat_x = feature_stats[i];
       const stat_y = feature_stats[j];
+      const subbox = {
+        p1: { x: width * j, y: height * i },
+        p2: { x: width * (j + 1), y: height * (i + 1) },
+      };
       if (i === j) {
         const histo = Stats.students_to_bins(raw_students, stat_x, 40);
-        const subbox = {
-          p1: { x: width * i, y: height * j },
-          p2: { x: width * (i + 1), y: height * (j + 1) },
-        };
         Graph.drawHistogram(svg, subbox, histo);
       } else {
-        const paired_data = Stats.make_pair(stat_x, stat_y, raw_students);
-        const subbox = {
-          p1: { x: width * i, y: height * j },
-          p2: { x: width * (i + 1), y: height * (j + 1) },
-        };
-        Graph.drawScatter(svg, subbox, paired_data);
+        const show_x_label = i === feature_stats.length - 1;
+        const show_y_label = j === 0;
+        const paired_data = Stats.make_pair(stat_y, stat_x, raw_students);
+        Graph.drawScatter(svg, subbox, paired_data, {
+          xLabel: show_x_label,
+          yLabel: show_y_label,
+        });
       }
     }
   }
