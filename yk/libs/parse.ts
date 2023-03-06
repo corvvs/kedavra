@@ -48,7 +48,6 @@ export namespace Parser {
    */
   export function quantize_categoricals(r: StudentRaw) {
     r.scores.is_left = r.best_hand === "Left" ? 1 : 0;
-    r.scores.is_right = r.best_hand === "Right" ? 1 : 0;
     r.scores.is_r = r.hogwarts_house === "Ravenclaw" ? 1 : 0;
     r.scores.is_s = r.hogwarts_house === "Slytherin" ? 1 : 0;
     r.scores.is_g = r.hogwarts_house === "Gryffindor" ? 1 : 0;

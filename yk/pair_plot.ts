@@ -5,6 +5,7 @@ import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
 import { Box } from "./libs/definitions";
 import { Geometric } from "./libs/geometric";
+import { Training } from "./libs/train";
 
 const SvgBuilder = require('svg-builder')
 
@@ -33,9 +34,16 @@ function main() {
 
   // [カテゴリカル変数の数値化]
   raw_students.forEach(r => Parser.quantize_categoricals(r));
+  float_features.push("is_left");
+  float_features.push("is_g");
+  float_features.push("is_r");
+  float_features.push("is_h");
+  float_features.push("is_s");
 
   // [統計データの計算]
-  const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
+  const feature_stats = float_features.map(feature => {
+    return Stats.derive_feature_stats(feature, raw_students);
+  });
 
   // [SVGの初期化]
   const width = 600;

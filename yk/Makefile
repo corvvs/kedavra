@@ -1,6 +1,9 @@
 NAMES	:= describe histogram scatter pair_plot
 
-all: pair_plot
+all: logreg_train
+	node logreg_train.js datasets/dataset_train.csv
+
+pp: pair_plot
 	node pair_plot.js datasets/dataset_train.csv
 
 describe:
@@ -13,6 +16,9 @@ scatter:
 	tsc $@.ts
 
 pair_plot:
+	tsc $@.ts
+
+logreg_train:
 	tsc $@.ts
 
 svg:
