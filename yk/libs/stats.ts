@@ -83,7 +83,7 @@ export namespace Stats {
       feature_stats.forEach(s => {
         const w = Math.max(s.name.length, 14);
         line += sprintf(` %${w}.6f`, s[key]);
-      })
+      });
       console.log(line);
     });
   }

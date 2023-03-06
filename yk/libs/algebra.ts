@@ -1,12 +1,5 @@
 import * as _ from "lodash"
-import { sprintf } from "sprintf-js";
-import { Box, Histogram, PairedData, Vector2D } from './definitions';
-import { Geometric } from './geometric';
-
-type Affine2D = {
-  xx: number; xy: number; xt: number;
-  yx: number; yy: number; yt: number;
-};
+import { Affine2D, Box, DrawOption, Vector2D } from './definitions';
 
 export namespace Algebra {
   /**
@@ -36,5 +29,21 @@ export namespace Algebra {
       x: t.xx * v.x + t.xy * v.y + t.xt,
       y: t.yx * v.x + t.yy * v.y + t.yt,
     };
+  }
+}
+
+export namespace Draw {
+  export function box(svg: any, box: Box, option: DrawOption = {}) {
+    const x = Math.min(box.p1.x, box.p2.x);
+    const y = Math.min(box.p1.y, box.p2.y);
+    const width = Math.abs(box.p2.x - box.p1.x);
+    const height = Math.abs(box.p2.y - box.p1.y);
+    svg.rect({
+      x,
+      y,
+      width,
+      height,
+      ...option,
+    });    
   }
 }

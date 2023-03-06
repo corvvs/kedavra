@@ -1,6 +1,6 @@
 import * as _ from "lodash"
 import { sprintf } from "sprintf-js";
-import { Algebra } from "./algebra";
+import { Algebra, Draw } from "./algebra";
 import { Box, Histogram, PairedData } from './definitions';
 import { Geometric } from './geometric';
 
@@ -73,21 +73,11 @@ export namespace Graph {
     }
 
     // [枠線]
-    {
-      const frame_x_left = figureOutBox.p1.x;
-      const frame_y_top = figureOutBox.p1.y;
-      const frame_x_right = figureOutBox.p2.x;
-      const frame_y_bottom = figureOutBox.p2.y;
-      svg.rect({
-        x: frame_x_left,
-        y: frame_y_top,
-        width: frame_x_right - frame_x_left,
-        height: frame_y_bottom - frame_y_top,
-        stroke: "#000",
-        stroke_width: "2",
-        fill: "none",
-      });
-    }
+    Draw.box(svg, figureOutBox, {
+      stroke: "#000",
+      "stroke-width": "2",
+      fill: "none",
+    });
 
     // [目盛: 横軸]
     {
@@ -196,8 +186,6 @@ export namespace Graph {
     const figureOutBox = Geometric.formBoxByInset(box, figureInset);
     const figureInBox = Geometric.formBoxByInset(figureOutBox, ScatterInset);
     const { width: figureWidth } = Geometric.formDimensionByBox(figureOutBox);
-    const figureInDimension = Geometric.formDimensionByBox(figureInBox);
-    const dimension = Geometric.formDimensionByBox(box);
 
     // データ座標系における, figureInBox にマップされる矩形領域
     // y が逆転していることに注意.
@@ -236,21 +224,11 @@ export namespace Graph {
     }
 
     // [枠線]
-    {
-      const frame_x_left = figureOutBox.p1.x;
-      const frame_y_top = figureOutBox.p1.y;
-      const frame_x_right = figureOutBox.p2.x;
-      const frame_y_bottom = figureOutBox.p2.y;
-      svg.rect({
-        x: frame_x_left,
-        y: frame_y_top,
-        width: frame_x_right - frame_x_left,
-        height: frame_y_bottom - frame_y_top,
-        stroke: "#000",
-        stroke_width: "2",
-        fill: "none",
-      });
-    }
+    Draw.box(svg, figureOutBox, {
+      stroke: "#000",
+      "stroke-width": "2",
+      fill: "none",
+    });
 
     // [目盛:x]
     {
@@ -284,7 +262,7 @@ export namespace Graph {
         const dy = 15;
         // ラベル
         svg.text({
-          x: x,
+          x,
           y: y_bottom,
           dy,
           "font-size": 10,
@@ -329,7 +307,7 @@ export namespace Graph {
         svg.text({
           x: x_bottom,
           dx,
-          y: y,
+          y,
           dy,
           "font-size": 10,
           "text-anchor": "end",
