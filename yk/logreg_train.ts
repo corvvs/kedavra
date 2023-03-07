@@ -3,10 +3,9 @@ import * as fs from 'fs';
 import { Parser } from './libs/parse';
 import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
-import { Box, FeatureStats, StudentRaw } from "./libs/definitions";
+import { Box } from "./libs/definitions";
 import { Geometric } from "./libs/geometric";
-import { features } from "process";
-import { Training } from "./libs/train";
+import { Preprocessor, Trainer, Validator } from "./libs/train";
 const SvgBuilder = require('svg-builder')
 
 /**
@@ -57,103 +56,39 @@ function main() {
   const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
 
   // [前処理:標準化]
-  feature_stats.forEach(stats => Training.standardize(stats, raw_students));
+  feature_stats.forEach(stats => Preprocessor.standardize(stats, raw_students));
   // feature_stats.forEach(stats => Training.normalize(stats, raw_students));
 
-  /**
-   * ある生徒の尤度 yi
-   */
-  const f_likelihood = (student: StudentRaw, features: string[], weights: number[]) => {
-    const r = features.map((f, i) => weights[i] * student.scores[f]).reduce((s, n) => s + n, 0);
-    return 1.0 / (1 + Math.exp(-r));
-  };
 
-  /**
-   * 勾配ベクトルのある特徴量の成分のうち, ある生徒による寄与
-   * (yi - ti) * xik
-   */
-  const f_partial_difference = (feature: string, actual: number, student: StudentRaw, likelyhood: number) => {
-    const yi = likelyhood;
-    const ti = actual;
-    const xik = student.scores[feature];
-    const v = (yi - ti) * xik;
-    return v;
-  }
-
-  const f_train = (target: string, features: string[], students: StudentRaw[]) => {
-    // [パラメータベクトルの初期化]
-    let weights = features.map(v => (Math.random() * 2 - 1) * 10);
-
-    // 学習率
-    let learning_rate = 0.5;
-    // 学習率減衰率
-    const learning_rate_decay = 0.99998;
-    let epoch = 0;
-    // 変化量
-    let d;
-    while (true) {
-      d = 0;
-      const delta_weights = features.map(f => 0);
-      students.forEach(s => {
-        const likelihood = f_likelihood(s, features, weights);
-        const actual = s.scores[target];
-        features.forEach((f, k) => {
-          const dv = f_partial_difference(f, actual, s, likelihood);
-          delta_weights[k] += dv;
-        });
-      });
-      
-      delta_weights.forEach((dw, k) => {
-        const v = dw / students.length;
-        d += (v ** 2);
-        weights[k] += -v * learning_rate;
-      });
-      d = Math.sqrt(d * learning_rate);
-      // console.log(epoch, learning_rate, d, delta_weights);
-      if (d < 0.001) {
-        break;
-      }
-      learning_rate *= learning_rate_decay;
-      epoch += 1;
-    }
-    console.log(target, d, epoch);
-    return weights;
-  }
-
-  // 定数項の付加
+  // [定数項の付加]
   raw_students.forEach(s => s.scores["constant"] = 0.1);
   float_features.push("constant");
 
+  // [学習]
   const house_key = ["is_g", "is_r", "is_h", "is_s"];
-  const ws = _(house_key).keyBy(key => key).mapValues(key => f_train(key, float_features, raw_students)).value();
+  const ws = _(house_key).keyBy(key => key).mapValues(key => {
+    const t0 = Date.now();
+    const ws = Trainer.gradient_descent(key, float_features, raw_students);
+    const t1 = Date.now();
+    console.log(`${key}: ${t1 - t0}ms`);
+    return ws;
+  }).value();
   _.each(ws, (weights, key) => {
     console.log(`[${key}]`);
     weights.forEach((w, i) => {
       console.log(float_features[i], w);
     })
   });
+
   // [評価]
-  let ok = 0;
-  let no = 0;
-  for (let i = 0; i < raw_students.length; ++i) {
-    const student = raw_students[i];
-    const probabilities = _.mapValues(ws, (ws) => f_likelihood(student, float_features, ws));
-    Object.assign(student.scores, _.mapKeys(probabilities, (v, key) => `predicted_${key}`));
-    const predicted = _.maxBy(_.keys(probabilities), (key) => probabilities[key])!;
-    const is_ok = (student.scores[predicted] === 1);
-    student.corrected = is_ok;
-    if (is_ok) {
-      ok += 1;
-    } else {
-      console.log(is_ok ? "[ok]" : "[KO]", i, student.first_name, student.last_name, student.hogwarts_house, predicted, probabilities);
-      no += 1;
-    }
+  {
+    const { ok, no } = Validator.validate_weights(ws, float_features, raw_students);
+    console.log(ok / (ok + no), `= ${ok} / (${ok} + ${no})`);
   }
-  house_key.forEach(key => float_features.push(`predicted_${key}`));
-  console.log(ok / (ok + no), `= ${ok} / (${ok} + ${no})`);
 
   // [外したデータをでっかくしてペアプロット]
   {
+    house_key.forEach(key => float_features.push(`predicted_${key}`));
     const sorted_students = _.sortBy(raw_students, s => s.corrected ? 0 : 1);
     const out_features = float_features.filter(f => f !== "constant");
     const out_stats = out_features.map(feature => Stats.derive_feature_stats(feature, sorted_students));

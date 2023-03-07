@@ -5,7 +5,6 @@ import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
 import { Box } from "./libs/definitions";
 import { Geometric } from "./libs/geometric";
-import { Training } from "./libs/train";
 
 const SvgBuilder = require('svg-builder')
 
