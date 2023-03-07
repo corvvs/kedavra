@@ -145,10 +145,10 @@ export namespace Trainer {
     // バッチサイズ
     batch_size: number;
   } = {
-    delta_limit: 0.0000000001,
+    delta_limit: 0.0001,
     initial_learning_rate: 0.1,
     learning_rate_decay: 0.0001,
-    batch_size: 64,
+    batch_size: 32,
   }) {
     const data = [...students];
     // [パラメータベクトルの初期化]
@@ -161,9 +161,14 @@ export namespace Trainer {
     } = params;
     // 学習率
     let learning_rate = initial_learning_rate;
-    let epoch = 0;
+    let epoch = 1;
     let i = 0;
     Preprocessor.shuffle(data);
+    const beta1 = 0.9;
+    const beta2 = 0.999;
+    const epsilon = 1e-10;
+    let previous_delta_weights = features.map(f => 0);
+    let previous_delta_rms = 0;
     while (true) {
       let d = 0;
       const delta_weights = features.map(f => 0);
@@ -177,16 +182,22 @@ export namespace Trainer {
           delta_weights[k] += dv;
         });
       }
+      delta_weights.forEach((dw, k) => delta_weights[k] = dw / n);
+      const delta_rms = delta_weights.reduce((s, g) => s + g ** 2, 0);
+      const vt = (beta2 * previous_delta_rms + (1 - beta2) * delta_rms) / (1 - Math.pow(beta2, epoch));
       delta_weights.forEach((dw, k) => {
-        const v = dw / n;
-        d += (v ** 2);
-        weights[k] += -v * learning_rate;
+        const mt = (beta1 * previous_delta_weights[k] + (1 - beta1) * dw) / (1 - Math.pow(beta1, epoch));
+        const x = mt / Math.sqrt(vt + epsilon);
+        d += (x ** 2);
+        weights[k] += -x * learning_rate;
       });
       d = Math.sqrt(d * learning_rate);
       if (d < delta_limit) {
-        console.log(epoch, i, d);
+        console.log("epoch:", epoch, "i:", i, "delta:", d, "delta_rms:", delta_rms);
         break;
       }
+      previous_delta_weights = delta_weights;
+      previous_delta_rms = delta_rms;
       if (i === data.length) {
         i = 0;
         learning_rate = learning_rate / (1 + learning_rate_decay * epoch);
