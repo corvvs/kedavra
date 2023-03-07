@@ -1,8 +1,9 @@
 import * as _ from "lodash"
 import { sprintf } from "sprintf-js";
 import { Algebra, Draw } from "./algebra";
-import { Box, Histogram, PairedData } from './definitions';
+import { Box, Dimension, FeatureStats, Histogram, PairedData, StudentRaw } from './definitions';
 import { Geometric } from './geometric';
+import { Stats } from "./stats";
 
 const SvgParameter = {
   margin: {
@@ -318,16 +319,48 @@ export namespace Graph {
 
     // [散布図本体]
     {
-      paired_data.pairs.forEach(p => {
+      paired_data.pairs.forEach((p, i) => {
         const q = Algebra.apply_affine(affineDataToFigure, p);
         svg.circle({
-          r: 4,
+          r: p.r || 4,
           cx: q.x,
           cy: q.y,
           fill: p.fill || "#fff",
           stroke: "#000",
         });
+        if (p.r && p.r > 5) {
+          svg.text({
+            x: q.x,
+            y: q.y,
+            "font-weight": "bold",
+          }, `#${i}`);
+        }
       });
+    }
+  }
+
+  export function drawPairPlot(svg: any, dimension: Dimension, students: StudentRaw[], feature_stats: FeatureStats[]) {
+    for (let i = 0; i < feature_stats.length; ++i) {
+      for (let j = 0; j < feature_stats.length; ++j) {
+        const stat_x = feature_stats[i];
+        const stat_y = feature_stats[j];
+        const subbox = {
+          p1: { x: dimension.width * j, y: dimension.height * i },
+          p2: { x: dimension.width * (j + 1), y: dimension.height * (i + 1) },
+        };
+        if (i === j) {
+          const histo = Stats.students_to_bins(students, stat_x, 40);
+          Graph.drawHistogram(svg, subbox, histo);
+        } else {
+          const show_x_label = i === feature_stats.length - 1;
+          const show_y_label = j === 0;
+          const paired_data = Stats.make_pair(stat_y, stat_x, students);
+          Graph.drawScatter(svg, subbox, paired_data, {
+            xLabel: show_x_label,
+            yLabel: show_y_label,
+          });
+        }
+      }
     }
   }
 }
