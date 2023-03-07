@@ -1,6 +1,9 @@
 import * as _ from "lodash"
 import { FeatureStats, StudentRaw } from "./definitions";
 
+/**
+ * データの前(とは限らない)処理
+ */
 export namespace Preprocessor {
 
   /**
@@ -60,6 +63,9 @@ function partial_difference(feature: string, actual: number, student: StudentRaw
   return v;
 }
 
+/**
+ * 学習
+ */
 export namespace Trainer {
 
   /**
@@ -94,9 +100,8 @@ export namespace Trainer {
     let learning_rate = initial_learning_rate;
     let epoch = 0;
     // 変化量
-    let d;
     while (true) {
-      d = 0;
+      let d = 0;
       const delta_weights = features.map(f => 0);
       students.forEach(s => {
         const likelihood = logistic_likelihood(s, features, weights);
@@ -121,8 +126,81 @@ export namespace Trainer {
     }
     return weights;
   }
+
+  /**
+   * 確率的勾配降下法でパラメータベクトルを計算する
+   * @param target 
+   * @param features 
+   * @param data 
+   * @param params 
+   * @returns 
+   */
+  export function stochastic_gradient_descent(target: string, features: string[], students: StudentRaw[], params: {
+    // イテレーション終了時のパラメータベクトル変化量
+    delta_limit: number;
+    // 学習率初期値
+    initial_learning_rate: number;
+    // 学習率減衰率
+    learning_rate_decay: number;
+    // バッチサイズ
+    batch_size: number;
+  } = {
+    delta_limit: 0.0000000001,
+    initial_learning_rate: 0.1,
+    learning_rate_decay: 0.0001,
+    batch_size: 64,
+  }) {
+    const data = [...students];
+    // [パラメータベクトルの初期化]
+    let weights = features.map(v => (Math.random() * 2 - 1) * 10);    
+    const {
+      delta_limit,
+      initial_learning_rate,
+      learning_rate_decay,
+      batch_size,
+    } = params;
+    // 学習率
+    let learning_rate = initial_learning_rate;
+    let epoch = 0;
+    let i = 0;
+    Preprocessor.shuffle(data);
+    while (true) {
+      let d = 0;
+      const delta_weights = features.map(f => 0);
+      let n = 0;
+      for (; i < data.length && n < batch_size; ++i, ++n) {
+        const s = data[i];
+        const likelihood = logistic_likelihood(s, features, weights);
+        const actual = s.scores[target];
+        features.forEach((f, k) => {
+          const dv = partial_difference(f, actual, s, likelihood);
+          delta_weights[k] += dv;
+        });
+      }
+      delta_weights.forEach((dw, k) => {
+        const v = dw / n;
+        d += (v ** 2);
+        weights[k] += -v * learning_rate;
+      });
+      d = Math.sqrt(d * learning_rate);
+      if (d < delta_limit) {
+        console.log(epoch, i, d);
+        break;
+      }
+      if (i === data.length) {
+        i = 0;
+        learning_rate = learning_rate / (1 + learning_rate_decay * epoch);
+        Preprocessor.shuffle(data);
+        epoch += 1;
+      }
+    }
+    return weights;
+  }
 }
 
+/**
+ * 評価
+ */
 export namespace Validator {
   export function validate_weights(weights: { [key in string]: number[] }, features: string[], students: StudentRaw[]) {
     let ok = 0;
@@ -137,7 +215,7 @@ export namespace Validator {
       if (is_ok) {
         ok += 1;
       } else {
-        console.log(is_ok ? "[ok]" : "[KO]", i, student.first_name, student.last_name, student.hogwarts_house, predicted, probabilities);
+        // console.log(is_ok ? "[ok]" : "[KO]", i, student.first_name, student.last_name, student.hogwarts_house, predicted, probabilities);
         no += 1;
       }
     }

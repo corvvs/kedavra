@@ -68,7 +68,8 @@ function main() {
   const house_key = ["is_g", "is_r", "is_h", "is_s"];
   const ws = _(house_key).keyBy(key => key).mapValues(key => {
     const t0 = Date.now();
-    const ws = Trainer.gradient_descent(key, float_features, raw_students);
+    const ws = Trainer.stochastic_gradient_descent(key, float_features, raw_students);
+    // const ws = Trainer.gradient_descent(key, float_features, raw_students);
     const t1 = Date.now();
     console.log(`${key}: ${t1 - t0}ms`);
     return ws;
