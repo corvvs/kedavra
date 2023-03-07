@@ -14,6 +14,7 @@ export type StudentRaw = {
   scores: {
     [K in string]: number;
   };
+  corrected?: boolean;
 }
 
 /**
@@ -86,9 +87,7 @@ export type Inset = {
   right: number;
 };
 
-export type Vector2DPlus = Vector2D & {
-  fill?: string;
-};
+export type Vector2DPlus = Vector2D & DrawOption;
 
 export type PairedData = {
   feature_x: FeatureStats;
@@ -113,5 +112,5 @@ export type TextOption = {
 };
 
 export type DrawOption = ShapeOption & {
-
+  r?: number;
 };
