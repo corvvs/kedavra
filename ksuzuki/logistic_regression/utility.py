@@ -15,8 +15,3 @@ def train_test_split(x, y, test_size=0.1, random_state=None):
     x_train = np.delete(x, indexes, 0)
     y_train = np.delete(y, indexes)
     return x_train, x_test, y_train, y_test
-
-
-def min_max_normalization(x, min_value, max_value):
-    eps = 1e-7
-    return (x - min_value) / np.clip(max_value - min_value, eps, None)

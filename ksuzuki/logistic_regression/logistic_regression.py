@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+
 from utility import sigmoid
 
 
@@ -11,6 +12,10 @@ class LogisticRegression:
 
     def predict(self, x):
         return np.where(self._net_out(x) > 0, 1, 0)
+
+
+    def predict_proba(self, x):
+        return self._activation(self._net_out(x))
 
 
     def train(self, x, y, epoch=100, verbose=False, seed=None):
@@ -29,15 +34,12 @@ class LogisticRegression:
                 print("{}/{}: weight: {}".format(i, epoch, self.weight))
 
 
-    def dump(self, file='data.pickle'):
-        with open(file, 'wb') as p:
-            pickle.dump(self.weight, p)
+    def dump(self):
+        return self.weight
 
 
-    def load(self, file='data.pickle'):
-        with open(file, mode='rb') as f:
-            s = pickle.load(f)
-            self.weight = s
+    def load(self, weight):
+        self.weight = weight
 
 
     def _gradient_descent(self, x, y):

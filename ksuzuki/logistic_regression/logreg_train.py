@@ -3,58 +3,49 @@ import pandas as pd
 import numpy as np
 
 from utility import train_test_split
-from logistic_regression import LogisticRegression
-from scaler import MinMaxScaler
+from model import Model
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('data_pass')
+    parser.add_argument('--test_size', type=float, default=0)
+    parser.add_argument('--learning_rate', type=float, default=0.001)
+    parser.add_argument('--epoch', type=int, default=100)
+    parser.add_argument('--varidation_step', type=int, default=1)
 
     args = parser.parse_args()
-    print(args.data_pass)
 
     df = pd.read_csv(args.data_pass, index_col=0)
 
-    # 必要なcolumnのみ取得
-    column_y = ['Hogwarts House']
-    column_x = ['Astronomy', 'Muggle Studies']
-    # column_x = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Arts',
-    #    'Divination', 'Muggle Studies', 'Ancient Runes', 'History of Magic',
-    #    'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms',
-    #    'Flying']
-    # column_x = ['Arithmancy', 'Astronomy', 'Herbology',
-    #    'Divination', 'Muggle Studies', 'Ancient Runes', 'History of Magic',
-    #    'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms',
-    #    'Flying']
-    df = df[column_y + column_x]
+    model = Model()
+    x, y = model.preprocess(df)
 
-    # 欠損値処理
-    df = df.dropna()
+    if args.test_size != 0:
+        print('validation start')
+        validation_result = []
+        for i in range(args.varidation_step):
+            print('varidation: {}/{}'.format(i + 1, args.varidation_step))
+            # データの分割
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=args.test_size)
 
-    # データの整理
-    y = df['Hogwarts House'].map({
-        'Slytherin': 0,
-        'Gryffindor': 1,
-        'Ravenclaw': 1,
-        'Hufflepuff': 1,
-    }).values
-    x = df[column_x].values
+            model = Model(learning_rate=args.learning_rate)
+            model.train(x_train, y_train, epoch=args.epoch, verbose=False)
 
-    # データの分割
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+            pred = model.predict(x_train)
+            accuracy_train = sum(y_train == pred) / len(y_train)
+            print('train: {} / {}: {}'.format(sum(y_train == pred), len(y_train), accuracy_train))
 
-    # 正規化（Min-Max normalization）
-    scaler = MinMaxScaler()
-    scaler.fit(x_train)
-    x_train = scaler.predict(x_train)
-    x_test = scaler.predict(x_test)
+            pred = model.predict(x_test)
+            accuracy_test = sum(y_test == pred) / len(y_test)
+            print('test: {} / {}: {}'.format(sum(y_test == pred), len(y_test), accuracy_test))
+            validation_result.append([accuracy_train, accuracy_test])
+        if args.varidation_step > 1:
+            acc = np.mean(validation_result, axis=0)
+            print('result:')
+            print('accuracy train mean: {}'.format(acc[0]))
+            print('accuracy test mean: {}'.format(acc[1]))
 
-    model = LogisticRegression(learning_rate=0.001)
-    model.train(x, y, epoch=100, verbose=False)
-
-    pred = model.predict(x_train)
-    print('train: {} / {}'.format(sum(1 - np.abs(y_train - pred)), len(y_train)))
-
-    pred = model.predict(x_test)
-    print('test: {} / {}'.format(sum(1 - np.abs(y_test - pred)), len(y_test)))
+    model = Model(learning_rate=args.learning_rate)
+    model.train(x, y, epoch=args.epoch, verbose=False)
+    model.dump()
