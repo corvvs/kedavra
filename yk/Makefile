@@ -1,6 +1,8 @@
-NAMES	:= describe histogram scatter pair_plot
+NAMES	:= describe histogram scatter pair_plot logreg_train logreg_predict
 
-all:	logreg_predict
+all:	$(NAMES)
+
+predict:	logreg_predict
 	node logreg_predict.js datasets/dataset_test.csv
 
 train:	logreg_train
@@ -29,3 +31,6 @@ logreg_predict:
 
 svg:
 	tsc $@.ts
+
+clean:
+	rm -rf *.js
