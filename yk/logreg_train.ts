@@ -75,7 +75,7 @@ function main() {
   // [学習]
   const cv_division = 8;
   Preprocessor.shuffle(raw_students);
-  const champion = _(_.range(cv_division)).map(i => {
+  const results = _.map(_.range(cv_division), i => {
     const from = Math.floor(raw_students.length / cv_division * i);
     const to = Math.floor(raw_students.length / cv_division * (i + 1));
     const students_validate = raw_students.slice(from, to);
@@ -99,12 +99,20 @@ function main() {
       console.log(key, ":", "[", ws.map(w => sprintf("%+1.2f", w)).join(", "), "]");
     });
     return { i, ws, precision };
-  }).maxBy(r => r.precision)!;
-  console.log("wins:", champion.i, champion.precision);
-  _.each(champion.ws, (ws, key) => {
+  });
+
+  const ws = _.mapValues(results[0].ws, (ws, key) => {
+    return Utils.average_vectors(results.map(r => r.ws[key]))
+  })
+
+  // console.log("wins:", champion.i, champion.precision);
+  // _.each(champion.ws, (ws, key) => {
+  //   console.log(key, ":", "[", ws.map(w => sprintf("%+1.2f", w)).join(", "), "]");
+  // });
+  console.log("averaged:");
+  _.each(ws, (ws, key) => {
     console.log(key, ":", "[", ws.map(w => sprintf("%+1.2f", w)).join(", "), "]");
   });
-  const ws = champion.ws;
   {
     const f_probability = (student: StudentRaw, weights: number[]) => Probability.logreg(student, using_features, weights);
     const { ok, no } = Validator.validate_weights(ws, raw_students, f_probability);
