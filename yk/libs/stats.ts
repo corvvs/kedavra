@@ -1,6 +1,7 @@
 import * as _ from "lodash"
 import { sprintf } from "sprintf-js";
-import { StudentRaw, FeatureStats, Histogram, Vector2D, Box, PairedData, Vector2DPlus } from "./definitions"
+import { StudentRaw, FeatureStats, Histogram, Vector2D, Box, PairedData, Vector2DPlus, FeatureCorrelation } from "./definitions"
+import { Utils } from "./utils";
 
 // 統計量をあつかう
 
@@ -78,7 +79,10 @@ export namespace Stats {
    * FeatureStats に含まれる各統計量を1行ずつにまとめて表示する.
    * @param feature_stats 
    */
-  export function print_stats_for_features(feature_stats: FeatureStats[]) {
+  export function print_stats_for_features(
+    feature_stats: FeatureStats[],
+    correlation_matrix?: FeatureCorrelation[][]
+  ) {
     // フィールド長の算出
     // [見出し行]
     let line = "";
@@ -107,6 +111,23 @@ export namespace Stats {
       feature_stats.forEach(s => {
         const w = Math.max(s.name.length, 14);
         line += sprintf(` %${w}.6f`, s[key]);
+      });
+      console.log(line);
+    });
+    if (!correlation_matrix) { return; }
+    // [相関係数行列の表示]
+    console.log("[correlation coefficients]");
+    correlation_matrix.forEach(row => {
+      const row_name = row[0].f1;
+      let line = "";
+      line += sprintf("%-10s", Utils.abbreviate(row_name, 10, "..."));
+      row.forEach(item => {
+        const w = Math.max(item.f2.length, 14);
+        if (item.f1 === item.f2) {
+          line += sprintf(` %${w}s`, "-");
+        } else {
+          line += sprintf(` %${w}.6f`, item.cor);
+        }
       });
       console.log(line);
     });

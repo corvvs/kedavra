@@ -2,6 +2,7 @@ import * as _ from "lodash"
 import * as fs from 'fs';
 import { Parser } from './libs/parse';
 import { Stats } from "./libs/stats";
+import { FeatureCorrelation } from "./libs/definitions";
 
 /**
  * 便宜上のメイン関数
@@ -32,9 +33,10 @@ function main() {
 
   // [統計データの計算]
   const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
+  const correlations: FeatureCorrelation[][] = Stats.derive_features_covariances(feature_stats, raw_students);
 
   // [統計量の出力]
-  Stats.print_stats_for_features(feature_stats);
+  Stats.print_stats_for_features(feature_stats, correlations);
 }
 
 try {
