@@ -5,6 +5,9 @@ import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
 import { Box } from "./libs/definitions";
 import { Geometric } from "./libs/geometric";
+import { IO } from "./libs/io";
+import { Flow } from "./libs/flow";
+import { Utils } from "./libs/utils";
 
 const SvgBuilder = require('svg-builder')
 
@@ -16,17 +19,11 @@ function main() {
   // [treat ARGV]
   const [dataset_path, feature_x, feature_y] = process.argv.slice(2);
   if (!dataset_path) {
-    throw new Error("dataset unspecified");
+    Flow.exit_with_error(
+      `usage: ${Utils.basename(process.argv[0])} ${Utils.basename(process.argv[1])} [dataset path] [feature name] [another feature name]`
+    );
   }
-  if (!feature_x) {
-    throw new Error("feature unspecified");
-  }
-  if (!feature_y) {
-    throw new Error("feature unspecified");
-  }
-  if (feature_x === feature_y) {
-    throw new Error("spexified same feature for x and y");
-  }
+
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
 
@@ -34,6 +31,20 @@ function main() {
   const [schema, ...rows] = data.split("\n");
   const normalized_fields = schema.split(",").map((s) => s.split(/\s+/).map(t => t.toLowerCase()).join("_"));
   const float_features: string[] = normalized_fields.filter(s => Parser.is_float_feature(s));
+
+  if (!float_features.includes(feature_x) || !float_features.includes(feature_y)) {
+    Flow.exit_with_error([
+      `usage: ${Utils.basename(process.argv[0])} ${Utils.basename(process.argv[1])} [dataset path] [feature name] [another feature name]`,
+      "",
+      "<available feature names>",
+      ...float_features.map(n => `- ${n}`),
+    ].join("\n"));
+  }
+  if (feature_x === feature_y) {
+    Flow.exit_with_error(
+      "specify 2 different feature names.",
+    );
+  }
 
   // [生徒データの生成]
   const raw_students = rows
@@ -44,15 +55,7 @@ function main() {
   raw_students.forEach(r => Parser.quantize_categoricals(r));
 
   // [統計データの計算]
-  const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
-  const feature_stat_x = feature_stats.find(f => f.name === feature_x);
-  if (!feature_stat_x) {
-    throw new Error("feature for x is invalid");
-  }
-  const feature_stat_y = feature_stats.find(f => f.name === feature_y);
-  if (!feature_stat_y) {
-    throw new Error("feature for x is invalid");
-  }
+  const [feature_stat_x, feature_stat_y] = [feature_x, feature_y].map(feature => Stats.derive_feature_stats(feature, raw_students));
 
   // [ペアリングデータの作成]
   const paired_data = Stats.make_pair(feature_stat_x, feature_stat_y, raw_students);
@@ -68,8 +71,7 @@ function main() {
   const scatter_svg = svg.render();
 
   // [ファイルに書き出す]
-  const out_path = `scatter_${feature_x}_vs_${feature_y}.svg`;
-  fs.writeFileSync(out_path, scatter_svg);
+  IO.save(`scatter_${feature_x}_vs_${feature_y}.svg`, scatter_svg);
 }
 
 try {
