@@ -6,6 +6,9 @@ import { Graph } from "./libs/graph";
 import { Box, Standardizers, StudentRaw } from "./libs/definitions";
 import { Geometric } from "./libs/geometric";
 import { Preprocessor, Probability, Trainer, Validator } from "./libs/train";
+import { IO } from "./libs/io";
+import { Flow } from "./libs/flow";
+import { Utils } from "./libs/utils";
 const SvgBuilder = require('svg-builder')
 
 /**
@@ -16,7 +19,9 @@ function main() {
   // [treat ARGV]
   const [dataset_path] = process.argv.slice(2);
   if (!dataset_path) {
-    throw new Error("dataset unspecified");
+    Flow.exit_with_error(
+      `usage: ${Utils.basename(process.argv[0])} ${Utils.basename(process.argv[1])} [dataset path]`
+    );
   }
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
@@ -104,7 +109,7 @@ function main() {
       weights.forEach((w, i) => d[using_features[i]] = w);
       return d;
     });
-    fs.writeFileSync(`parameters.json`, JSON.stringify({
+    IO.save("parameters.json", JSON.stringify({
       weights, standardizers,
     }, null, 2));
   }
@@ -128,8 +133,7 @@ function main() {
   //   Graph.drawPairPlot(svg, { width, height }, sorted_students, out_stats);
   //   const pair_plot_svg = svg.render();
 
-  //   const out_path = `training.svg`;
-  //   fs.writeFileSync(out_path, pair_plot_svg);
+  //   IO.save("training.svg", pair_plot_svg);
   // }
 }
 

@@ -2,11 +2,11 @@ import * as _ from "lodash"
 import * as fs from 'fs';
 import { Parser } from './libs/parse';
 import { Stats } from "./libs/stats";
-import { Graph } from "./libs/graph";
-import { Box, StudentRaw, TrainedParameters } from "./libs/definitions";
-import { Geometric } from "./libs/geometric";
-import { Preprocessor, Probability, Trainer, Validator } from "./libs/train";
-const SvgBuilder = require('svg-builder')
+import { StudentRaw, TrainedParameters } from "./libs/definitions";
+import { Preprocessor, Probability, Validator } from "./libs/train";
+import { IO } from "./libs/io";
+import { Flow } from "./libs/flow";
+import { Utils } from "./libs/utils";
 
 const default_parameters_path = "parameters.json";
 
@@ -18,7 +18,9 @@ function main() {
   // [treat ARGV]
   const [dataset_path, given_parameters_path] = process.argv.slice(2);
   if (!dataset_path) {
-    throw new Error("dataset unspecified");
+    Flow.exit_with_error(
+      `usage: ${Utils.basename(process.argv[0])} ${Utils.basename(process.argv[1])} [dataset path]`
+    );
   }
   const parameters_path = given_parameters_path || default_parameters_path;
   // [データセット読み取り]
@@ -95,7 +97,7 @@ function main() {
     raw_students.forEach(s => {
       str += output_fields.map((s, i) => normalized_fields[i]).map((f) => s.raw_splitted[f]).join(",") + "\n";
     });
-    fs.writeFileSync("houses.csv", str);
+    IO.save("houses.csv", str);
   }
 }
 
