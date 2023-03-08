@@ -45,6 +45,13 @@ export type FeatureStats = {
   p100: number;
 };
 
+export type FeatureCorrelation = {
+  f1: string;
+  f2: string;
+  variance: number;
+  cor: number;
+};
+
 /**
  * 階級値データ
  */
