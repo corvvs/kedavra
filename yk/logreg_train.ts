@@ -9,6 +9,7 @@ import { Preprocessor, Probability, Trainer, Validator } from "./libs/train";
 import { IO } from "./libs/io";
 import { Flow } from "./libs/flow";
 import { Utils } from "./libs/utils";
+import { sprintf } from "sprintf-js";
 const SvgBuilder = require('svg-builder')
 
 /**
@@ -65,38 +66,51 @@ function main() {
 
   // [前処理:標準化]
   feature_stats.forEach(stats => Preprocessor.standardize(stats, raw_students));
-  const stats_dict = _.keyBy(feature_stats, (f) => f.name);
-  // feature_stats.forEach(stats => Training.normalize(stats, raw_students));
   const using_features = feature_stats.map(f => f.name);
 
   // [定数項の付加]
   raw_students.forEach(s => s.scores["constant"] = 1);
   using_features.push("constant");
-  console.log(using_features);
 
   // [学習]
-  const house_key = ["is_g", "is_r", "is_h", "is_s"];
-  const ws = _(house_key).keyBy(key => key).mapValues(key => {
-    const t0 = Date.now();
-    const ws = Trainer.stochastic_gradient_descent(key, using_features, raw_students);
-    // const ws = Trainer.gradient_descent(key, using_featurs, raw_students);
-    const t1 = Date.now();
-    console.log(`${key}: ${t1 - t0}ms`);
-    return ws;
-  }).value();
-  _.each(ws, (weights, key) => {
-    console.log(`[${key}]`);
-    weights.forEach((w, i) => {
-      console.log(using_features[i], w);
-    })
-  });
+  const cv_division = 8;
+  Preprocessor.shuffle(raw_students);
+  const champion = _(_.range(cv_division)).map(i => {
+    const from = Math.floor(raw_students.length / cv_division * i);
+    const to = Math.floor(raw_students.length / cv_division * (i + 1));
+    const students_validate = raw_students.slice(from, to);
+    const students_training = raw_students.filter((s, i) => i < from || to <= i);
+    console.log(i, students_training.length, from, to, students_validate.length);
+    const house_key = ["is_g", "is_r", "is_h", "is_s"];
+    const ws = _(house_key).keyBy(key => key).mapValues(key => {
+      const t0 = Date.now();
+      const ws = Trainer.stochastic_gradient_descent(key, using_features, students_training);
+      const t1 = Date.now();
+      console.log(`${key}: ${t1 - t0}ms`);
+      return ws;
+    }).value();
 
-  // [評価]
+    // [評価]
+    const f_probability = (student: StudentRaw, weights: number[]) => Probability.logreg(student, using_features, weights);
+    const { ok, no } = Validator.validate_weights(ws, students_validate, f_probability);
+    const precision = ok / (ok + no);
+    console.log(i, precision, `= ${ok} / (${ok} + ${no})`);
+    _.each(ws, (ws, key) => {
+      console.log(key, ":", "[", ws.map(w => sprintf("%+1.2f", w)).join(", "), "]");
+    });
+    return { i, ws, precision };
+  }).maxBy(r => r.precision)!;
+  console.log("wins:", champion.i, champion.precision);
+  _.each(champion.ws, (ws, key) => {
+    console.log(key, ":", "[", ws.map(w => sprintf("%+1.2f", w)).join(", "), "]");
+  });
+  const ws = champion.ws;
   {
     const f_probability = (student: StudentRaw, weights: number[]) => Probability.logreg(student, using_features, weights);
     const { ok, no } = Validator.validate_weights(ws, raw_students, f_probability);
-    console.log(ok / (ok + no), `= ${ok} / (${ok} + ${no})`);
+    console.log("whole:", ok / (ok + no), `= ${ok} / (${ok} + ${no})`);
   }
+
 
   // [パラメータファイル出力]
   {
