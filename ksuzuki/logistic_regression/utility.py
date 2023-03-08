@@ -15,3 +15,9 @@ def train_test_split(x, y, test_size=0.1, random_state=None):
     x_train = np.delete(x, indexes, 0)
     y_train = np.delete(y, indexes)
     return x_train, x_test, y_train, y_test
+
+
+def mean(x):
+    if len(x) == 0:
+        return 0
+    return sum(x) / len(x)

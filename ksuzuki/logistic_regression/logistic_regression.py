@@ -5,9 +5,10 @@ from utility import sigmoid
 
 
 class LogisticRegression:
-    def __init__(self, weight=None, learning_rate=1):
+    def __init__(self, weight=None, learning_rate=1, C=None):
         self.weight = weight
         self.learning_rate = learning_rate
+        self.C = C
 
 
     def predict(self, x):
@@ -29,7 +30,9 @@ class LogisticRegression:
             self._init_weight(x, seed)
 
         for i in range(epoch):
-            self._gradient_descent(x, y)
+            # self._gradient_descent(x, y)
+            # self._sgd(x, y, seed)
+            self._mini_batch_sgd(x, y, 16, seed)
             if verbose:
                 print("{}/{}: weight: {}".format(i, epoch, self.weight))
 
@@ -44,11 +47,45 @@ class LogisticRegression:
 
     def _gradient_descent(self, x, y):
         # delta_weight = (pred_prod - y)x
-        # weight -= learning_rate * delta_weight
+        # weight -= learning_rate * (C * delta_weight + weight)
         pred_prod = self._activation(self._net_out(x))
         errors = pred_prod - y
-        self.weight[0] -= self.learning_rate * errors.sum()
-        self.weight[1:] -= self.learning_rate * x.T.dot(errors)
+        if self.C is None:
+            grad = np.array((
+                errors.sum(),
+                *(x.T.dot(errors))
+            ))
+        else:
+            grad = np.array((
+                self.C * errors.sum(),
+                *(self.C * x.T.dot(errors) + np.abs(self.weight[1:]))
+            ))
+        self.weight -= self.learning_rate * grad
+
+
+    def _sgd(self, x, y, seed):
+        if not hasattr(self, 'sgd_rgen'):
+            self.sgd_rgen = np.random.RandomState(seed)
+        indexes = self.sgd_rgen.choice(len(y), size=len(y), replace=None)
+        x_random = x[indexes]
+        y_random = y[indexes]
+        for i in range(len(y_random)):
+            self._gradient_descent(np.array((x_random[i],)), np.array((y_random[i],)))
+
+
+    def _mini_batch_sgd(self, x, y, batch_size, seed):
+        if not hasattr(self, 'mb_sgd_rgen'):
+            self.mb_sgd_rgen = np.random.RandomState(seed)
+        indexes = self.mb_sgd_rgen.choice(len(y), size=len(y), replace=None)
+        x_random = x[indexes]
+        y_random = y[indexes]
+        for i in range(len(y_random) // batch_size):
+            start = i * batch_size
+            end = (i + 1) * batch_size
+            self._gradient_descent(x_random[start: end], y_random[start: end])
+        if len(y_random) & batch_size != 0:
+            start = (len(y_random) // batch_size) * batch_size
+            self._gradient_descent(x_random[start:], y_random[start:])
 
 
     def _net_out(self, x):

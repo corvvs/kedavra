@@ -6,6 +6,9 @@
 - 最適化アルゴリズムについて：https://qiita.com/omiita/items/1735c1d048fe5f611f80
 - sklearnのlogistic regression: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
 - logistic regressionの更新：https://blog.kazuya.co/machine%20learning/2014/04/28/Logistic-Regression-Algorithm.html
+- 正則化について：https://www.yakupro.info/entry/ml-logisticregression1
+- 最適化アルゴリズム：https://qiita.com/omiita/items/1735c1d048fe5f611f80
+- 
 
 ## 環境構築
 

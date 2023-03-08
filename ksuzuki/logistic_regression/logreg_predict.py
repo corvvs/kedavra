@@ -15,11 +15,11 @@ if __name__ == '__main__':
     df = pd.read_csv(args.data_pass, index_col=0)
 
     model = Model()
-    x, y = model.preprocess(df)
     model.load(args.weight_pass)
 
-    pred = model.predict(x)
-    print('test: {} / {}: {}'.format(sum(y == pred), len(y), sum(y == pred) / len(y)))
+    x, y = model.df_preprocess(df)
+    x, y = model.preprocess(x, y, is_train=False)
 
+    pred = model.predict(x)
     df = pd.DataFrame(np.array([np.arange(len(pred)), pred]).T, columns=['Index', 'Hogwarts House'])
     df.to_csv('houses.csv', index=False)
