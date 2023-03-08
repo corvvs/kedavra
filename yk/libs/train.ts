@@ -1,5 +1,6 @@
 import * as _ from "lodash"
-import { FeatureStats, StudentRaw } from "./definitions";
+import { FeatureStats, KeyToHouse, Standardizer, StudentRaw } from "./definitions";
+import { Stats } from "./stats";
 
 /**
  * データの前(とは限らない)処理
@@ -18,6 +19,22 @@ export namespace Preprocessor {
       const v = s.scores[stats.name];
       if (!_.isFinite(v)) { return; }
       s.scores[stats.name] = (v - stats.mean) / stats.std;
+    });
+  }
+
+  /**
+   * (破壊的変更)
+   * 生徒データのうち選択した`feature`を標準化する.
+   * 標準化の際は`standardizer`の中身(mean, std)を使う.
+   * @param feature 
+   * @param standardizer 
+   * @param students 
+   */
+  export function standardize_by_ex(feature: string, standardizer: Standardizer, students: StudentRaw[]) {
+    students.forEach(s => {
+      const v = s.scores[feature];
+      if (!_.isFinite(v)) { return; }
+      s.scores[feature] = (v - standardizer.mean) / standardizer.std;
     });
   }
 
@@ -42,15 +59,31 @@ export namespace Preprocessor {
       [data[i], data[j]] = [data[j], data[i]];
     }
   }
+
+  export function reduce_by_corelation(stats: FeatureStats[], students: StudentRaw[]) {
+    const useless_keys: { [K: string]: string } = {};
+    Stats.derive_features_covariances(stats, students).forEach((row, i) => {
+      row.forEach((r, j) => {
+        if (i < j && r.f1 !== r.f2 && Math.abs(r.cor) > 0.95) {
+          console.log("reduce:", r.f1, r.f2, r.variance, r.cor);
+          useless_keys[r.f2] = r.f2;
+        }
+      });
+    });
+    const reduced_stats = stats.filter(s => !useless_keys[s.name]);
+    return reduced_stats;
+  }
 }
 
-/**
- * ロジスティック回帰におけるある生徒の尤度
- */
-function logistic_likelihood(student: StudentRaw, features: string[], weights: number[]) {
-  const r = features.map((f, i) => weights[i] * student.scores[f]).reduce((s, n) => s + n, 0);
-  return 1.0 / (1 + Math.exp(-r));
-};
+export namespace Probability {
+  /**
+   * ロジスティック回帰におけるある生徒の確率
+   */
+  export function logreg(student: StudentRaw, features: string[], weights: number[]) {
+    const r = features.map((f, i) => weights[i] * student.scores[f]).reduce((s, n) => s + n, 0);
+    return 1.0 / (1 + Math.exp(-r));
+  };
+}
 
 /**
  * 勾配ベクトルのある特徴量の成分のうち, ある生徒による寄与
@@ -104,7 +137,7 @@ export namespace Trainer {
       let d = 0;
       const delta_weights = features.map(f => 0);
       students.forEach(s => {
-        const likelihood = logistic_likelihood(s, features, weights);
+        const likelihood = Probability.logreg(s, features, weights);
         const actual = s.scores[target];
         features.forEach((f, k) => {
           const dv = partial_difference(f, actual, s, likelihood);
@@ -175,7 +208,7 @@ export namespace Trainer {
       let n = 0;
       for (; i < data.length && n < batch_size; ++i, ++n) {
         const s = data[i];
-        const likelihood = logistic_likelihood(s, features, weights);
+        const likelihood = Probability.logreg(s, features, weights);
         const actual = s.scores[target];
         features.forEach((f, k) => {
           const dv = partial_difference(f, actual, s, likelihood);
@@ -213,12 +246,16 @@ export namespace Trainer {
  * 評価
  */
 export namespace Validator {
-  export function validate_weights(weights: { [key in string]: number[] }, features: string[], students: StudentRaw[]) {
+  export function validate_weights(
+    weights: { [key in string]: number[] },
+    students: StudentRaw[],
+    probability: (student: StudentRaw, weights: number[]) => number
+  ) {
     let ok = 0;
     let no = 0;
     for (let i = 0; i < students.length; ++i) {
       const student = students[i];
-      const probabilities = _.mapValues(weights, (ws) => logistic_likelihood(student, features, ws));
+      const probabilities = _.mapValues(weights, (ws) => probability(student, ws));
       Object.assign(student.scores, _.mapKeys(probabilities, (v, key) => `predicted_${key}`));
       const predicted = _.maxBy(_.keys(probabilities), (key) => probabilities[key])!;
       const is_ok = (student.scores[predicted] === 1);
@@ -231,5 +268,24 @@ export namespace Validator {
       }
     }
     return { ok, no };
+  }
+
+  /**
+   * 重みデータをもとに、生徒1人の所属寮を予測して返す.
+   * @param weights 
+   * @param features 
+   * @param student 
+   * @returns 
+   */
+  export function predict_house(
+    weights: { [key in string]: number[] },
+    student: StudentRaw,
+    probability: (student: StudentRaw, weights: number[]) => number
+  ) {
+    const probabilities = _.mapValues(weights, (ws) => probability(student, ws));
+    const predicted = _.maxBy(_.keys(probabilities), (key) => probabilities[key])!;
+    const house = KeyToHouse[predicted];
+    // const score = probabilities[predicted] / _.reduce(probabilities, (s, p) => s + p, 0);
+    return house;
   }
 }

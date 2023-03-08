@@ -1,3 +1,5 @@
+import * as _ from "lodash"
+
 // データ型などを定義する
 
 /**
@@ -15,6 +17,9 @@ export type StudentRaw = {
     [K in string]: number;
   };
   corrected?: boolean;
+  raw_splitted: {
+    [name: string]: string;
+  };
 }
 
 /**
@@ -49,6 +54,24 @@ export type Histogram = {
   bins: number;
   counts: number[];
   max_count: number;
+};
+
+export type Standardizer = Pick<FeatureStats, "mean" | "std">;
+
+export type Standardizers = {
+  [feature: string]: Standardizer;
+};
+
+/**
+ * パラメータデータ
+ */
+export type TrainedParameters = {
+  weights: {
+    [house: string]: {
+      [feature: string]: number;
+    };
+  };
+  standardizers: Standardizers;
 };
 
 /**
@@ -114,3 +137,16 @@ export type TextOption = {
 export type DrawOption = ShapeOption & {
   r?: number;
 };
+
+export const HouseToKey = {
+  Ravenclaw: "is_r",
+  Slytherin: "is_s",
+  Gryffindor: "is_g",
+  Hufflepuff: "is_h",
+};
+
+export const KeyToHouse = _(HouseToKey)
+  .mapValues((k, h) => ({ k, h }))
+  .mapKeys((v, h) => v.k)
+  .mapValues((v, k) => v.h).value();
+
