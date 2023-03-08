@@ -89,10 +89,11 @@ function main() {
 
   // [CSV再生成]
   {
+    const output_fields = ["index", "hogwarts_house"];
     let str = "";
-    str += schema_fields.join(",") + "\n";
+    str += output_fields.map((s, i) => schema_fields[i]).join(",") + "\n";
     raw_students.forEach(s => {
-      str += normalized_fields.map((f) => s.raw_splitted[f]).join(",") + "\n";
+      str += output_fields.map((s, i) => normalized_fields[i]).map((f) => s.raw_splitted[f]).join(",") + "\n";
     });
     fs.writeFileSync("houses.csv", str);
   }
