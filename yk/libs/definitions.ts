@@ -56,6 +56,24 @@ export type Histogram = {
   max_count: number;
 };
 
+export type Standardizer = Pick<FeatureStats, "mean" | "std">;
+
+export type Standardizers = {
+  [feature: string]: Standardizer;
+};
+
+/**
+ * パラメータデータ
+ */
+export type TrainedParameters = {
+  weights: {
+    [house: string]: {
+      [feature: string]: number;
+    };
+  };
+  standardizers: Standardizers;
+};
+
 /**
  * 2次元の点
  */

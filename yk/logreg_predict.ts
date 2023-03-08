@@ -3,9 +3,9 @@ import * as fs from 'fs';
 import { Parser } from './libs/parse';
 import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
-import { Box } from "./libs/definitions";
+import { Box, StudentRaw, TrainedParameters } from "./libs/definitions";
 import { Geometric } from "./libs/geometric";
-import { Preprocessor, Trainer, Validator } from "./libs/train";
+import { Preprocessor, Probability, Trainer, Validator } from "./libs/train";
 const SvgBuilder = require('svg-builder')
 
 const default_parameters_path = "parameters.json";
@@ -24,11 +24,7 @@ function main() {
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
   // [パラメータ読み取り]
-  const parameters: {
-    [house: string]: {
-      [feature: string]: number;
-    }
-  } = JSON.parse(fs.readFileSync(parameters_path, 'utf-8'));
+  const parameters: TrainedParameters = JSON.parse(fs.readFileSync(parameters_path, 'utf-8'));
 
   // [スキーマ処理]
   const [schema_row, ...rows] = data.split("\n");
@@ -64,14 +60,14 @@ function main() {
   }
 
   // [統計データの再計算]
-  // 標準化するとデータが変更されるので, 復元用にとっておく
   const feature_stats = (() => {
     const feature_stats = float_features.map(feature => Stats.derive_feature_stats(feature, raw_students));
     return Preprocessor.reduce_by_corelation(feature_stats, raw_students);
   })();
 
   // [前処理:標準化]
-  feature_stats.forEach(stats => Preprocessor.standardize(stats, raw_students));
+  // ここでは parameters.json の standardizer を使って標準化する
+  feature_stats.forEach(stats => Preprocessor.standardize_by_ex(stats.name, parameters.standardizers[stats.name], raw_students));
   // feature_stats.forEach(stats => Training.normalize(stats, raw_students));
   const using_features = feature_stats.map(f => f.name);
 
@@ -80,13 +76,14 @@ function main() {
   raw_students.forEach(s => s.scores["constant"] = 1);
   using_features.push("constant");
 
-  const ws = _.mapValues(parameters, (weights, key) => {
+  const ws = _.mapValues(parameters.weights, (weights, key) => {
     return using_features.map(f => weights[f]);
   });
 
   // [予測]
   raw_students.forEach(s => {
-    const house = Validator.predict_house(ws, using_features, s);
+    const f_probability = (student: StudentRaw, weights: number[]) => Probability.logreg(student, using_features, weights);
+    const house = Validator.predict_house(ws, s, f_probability);
     s.raw_splitted["hogwarts_house"] = house;
   });
 

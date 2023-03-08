@@ -3,9 +3,9 @@ import * as fs from 'fs';
 import { Parser } from './libs/parse';
 import { Stats } from "./libs/stats";
 import { Graph } from "./libs/graph";
-import { Box } from "./libs/definitions";
+import { Box, Standardizers, StudentRaw } from "./libs/definitions";
 import { Geometric } from "./libs/geometric";
-import { Preprocessor, Trainer, Validator } from "./libs/train";
+import { Preprocessor, Probability, Trainer, Validator } from "./libs/train";
 const SvgBuilder = require('svg-builder')
 
 /**
@@ -60,6 +60,7 @@ function main() {
 
   // [前処理:標準化]
   feature_stats.forEach(stats => Preprocessor.standardize(stats, raw_students));
+  const stats_dict = _.keyBy(feature_stats, (f) => f.name);
   // feature_stats.forEach(stats => Training.normalize(stats, raw_students));
   const using_features = feature_stats.map(f => f.name);
 
@@ -87,42 +88,49 @@ function main() {
 
   // [評価]
   {
-    const { ok, no } = Validator.validate_weights(ws, using_features, raw_students);
+    const f_probability = (student: StudentRaw, weights: number[]) => Probability.logreg(student, using_features, weights);
+    const { ok, no } = Validator.validate_weights(ws, raw_students, f_probability);
     console.log(ok / (ok + no), `= ${ok} / (${ok} + ${no})`);
   }
 
   // [パラメータファイル出力]
   {
-    const json = _.mapValues(ws, (weights, key) => {
+    const standardizers: Standardizers = _(feature_stats).keyBy(s => s.name).mapValues((s) => ({
+      mean: s.mean,
+      std: s.std,
+    })).value();
+    const weights = _.mapValues(ws, (weights, key) => {
       const d: { [key: string]: number } = {};
       weights.forEach((w, i) => d[using_features[i]] = w);
       return d;
     });
-    fs.writeFileSync(`parameters.json`, JSON.stringify(json, null, 2));
+    fs.writeFileSync(`parameters.json`, JSON.stringify({
+      weights, standardizers,
+    }, null, 2));
   }
 
-  // [外したデータをでっかくしてペアプロット]
-  {
-    house_key.forEach(key => using_features.push(`predicted_${key}`));
-    const sorted_students = _.sortBy(raw_students, s => s.corrected ? 0 : 1);
-    const out_features = using_features.filter(f => f !== "constant");
-    const out_stats = out_features.map(feature => Stats.derive_feature_stats(feature, sorted_students));
-    const width = 600;
-    const height = 600;
-    const box: Box = {
-      p1: { x: 0, y: 0 },
-      p2: { x: width * out_features.length, y: height * out_features.length },
-    };
-    const dimension = Geometric.formDimensionByBox(box);
-    const svg = SvgBuilder.width(dimension.width).height(dimension.height);  
+  // // [外したデータをでっかくしてペアプロット]
+  // {
+  //   house_key.forEach(key => using_features.push(`predicted_${key}`));
+  //   const sorted_students = _.sortBy(raw_students, s => s.corrected ? 0 : 1);
+  //   const out_features = using_features.filter(f => f !== "constant");
+  //   const out_stats = out_features.map(feature => Stats.derive_feature_stats(feature, sorted_students));
+  //   const width = 600;
+  //   const height = 600;
+  //   const box: Box = {
+  //     p1: { x: 0, y: 0 },
+  //     p2: { x: width * out_features.length, y: height * out_features.length },
+  //   };
+  //   const dimension = Geometric.formDimensionByBox(box);
+  //   const svg = SvgBuilder.width(dimension.width).height(dimension.height);  
 
-    // [SVGの作成]
-    Graph.drawPairPlot(svg, { width, height }, sorted_students, out_stats);
-    const pair_plot_svg = svg.render();
+  //   // [SVGの作成]
+  //   Graph.drawPairPlot(svg, { width, height }, sorted_students, out_stats);
+  //   const pair_plot_svg = svg.render();
 
-    const out_path = `training.svg`;
-    fs.writeFileSync(out_path, pair_plot_svg);
-  }
+  //   const out_path = `training.svg`;
+  //   fs.writeFileSync(out_path, pair_plot_svg);
+  // }
 }
 
 try {
