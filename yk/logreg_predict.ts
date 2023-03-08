@@ -8,22 +8,34 @@ import { Geometric } from "./libs/geometric";
 import { Preprocessor, Trainer, Validator } from "./libs/train";
 const SvgBuilder = require('svg-builder')
 
+const default_parameters_path = "parameters.json";
+
 /**
  * 便宜上のメイン関数
  * @returns 
  */
 function main() {
   // [treat ARGV]
-  const [dataset_path] = process.argv.slice(2);
+  const [dataset_path, given_parameters_path] = process.argv.slice(2);
   if (!dataset_path) {
     throw new Error("dataset unspecified");
   }
+  const parameters_path = given_parameters_path || default_parameters_path;
   // [データセット読み取り]
   const data = fs.readFileSync(dataset_path, 'utf-8');
+  // [パラメータ読み取り]
+  const parameters: {
+    [house: string]: {
+      [feature: string]: number;
+    }
+  } = JSON.parse(fs.readFileSync(parameters_path, 'utf-8'));
 
   // [スキーマ処理]
-  const [schema, ...rows] = data.split("\n");
-  const normalized_fields = schema.split(",").map((s) => s.split(/\s+/).map(t => t.toLowerCase()).join("_"));
+  const [schema_row, ...rows] = data.split("\n");
+  const schema_fields = schema_row.split(",");
+  const normalized_fields = schema_fields
+    .map((s) => s.split(/\s+/).map(t => t.toLowerCase())
+    .join("_"));
   const float_features: string[] = normalized_fields.filter(s => Parser.is_float_feature(s));
 
   // [生徒データの生成]
@@ -64,64 +76,28 @@ function main() {
   const using_features = feature_stats.map(f => f.name);
 
   // [定数項の付加]
+  // TODO: 定数項の値をライブラリ定数にする
   raw_students.forEach(s => s.scores["constant"] = 1);
   using_features.push("constant");
-  console.log(using_features);
 
-  // [学習]
-  const house_key = ["is_g", "is_r", "is_h", "is_s"];
-  const ws = _(house_key).keyBy(key => key).mapValues(key => {
-    const t0 = Date.now();
-    const ws = Trainer.stochastic_gradient_descent(key, using_features, raw_students);
-    // const ws = Trainer.gradient_descent(key, using_featurs, raw_students);
-    const t1 = Date.now();
-    console.log(`${key}: ${t1 - t0}ms`);
-    return ws;
-  }).value();
-  _.each(ws, (weights, key) => {
-    console.log(`[${key}]`);
-    weights.forEach((w, i) => {
-      console.log(using_features[i], w);
-    })
+  const ws = _.mapValues(parameters, (weights, key) => {
+    return using_features.map(f => weights[f]);
   });
 
-  // [評価]
-  {
-    const { ok, no } = Validator.validate_weights(ws, using_features, raw_students);
-    console.log(ok / (ok + no), `= ${ok} / (${ok} + ${no})`);
-  }
+  // [予測]
+  raw_students.forEach(s => {
+    const house = Validator.predict_house(ws, using_features, s);
+    s.raw_splitted["hogwarts_house"] = house;
+  });
 
-  // [パラメータファイル出力]
+  // [CSV再生成]
   {
-    const json = _.mapValues(ws, (weights, key) => {
-      const d: { [key: string]: number } = {};
-      weights.forEach((w, i) => d[using_features[i]] = w);
-      return d;
+    let str = "";
+    str += schema_fields.join(",") + "\n";
+    raw_students.forEach(s => {
+      str += normalized_fields.map((f) => s.raw_splitted[f]).join(",") + "\n";
     });
-    fs.writeFileSync(`parameters.json`, JSON.stringify(json, null, 2));
-  }
-
-  // [外したデータをでっかくしてペアプロット]
-  {
-    house_key.forEach(key => using_features.push(`predicted_${key}`));
-    const sorted_students = _.sortBy(raw_students, s => s.corrected ? 0 : 1);
-    const out_features = using_features.filter(f => f !== "constant");
-    const out_stats = out_features.map(feature => Stats.derive_feature_stats(feature, sorted_students));
-    const width = 600;
-    const height = 600;
-    const box: Box = {
-      p1: { x: 0, y: 0 },
-      p2: { x: width * out_features.length, y: height * out_features.length },
-    };
-    const dimension = Geometric.formDimensionByBox(box);
-    const svg = SvgBuilder.width(dimension.width).height(dimension.height);  
-
-    // [SVGの作成]
-    Graph.drawPairPlot(svg, { width, height }, sorted_students, out_stats);
-    const pair_plot_svg = svg.render();
-
-    const out_path = `training.svg`;
-    fs.writeFileSync(out_path, pair_plot_svg);
+    fs.writeFileSync("houses.csv", str);
   }
 }
 

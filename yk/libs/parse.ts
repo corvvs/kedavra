@@ -1,4 +1,5 @@
-import { StudentRaw } from "./definitions"
+import * as _ from "lodash"
+import { HouseToKey, StudentRaw } from "./definitions"
 
 // 生徒データをパースする
 
@@ -26,8 +27,10 @@ export namespace Parser {
     const items = line.split(",");
     const r: any = {};
     r.scores = {};
+    r.raw_splitted = {};
     items.forEach((s, i) => {
       const name = field_names[i];
+      r.raw_splitted[name] = s;
       if (is_integral_feature(name)) {
         // integral field
         r.index = parseInt(s);
@@ -48,9 +51,10 @@ export namespace Parser {
    */
   export function quantize_categoricals(r: StudentRaw) {
     r.scores.is_left = r.best_hand === "Left" ? 1 : 0;
-    r.scores.is_r = r.hogwarts_house === "Ravenclaw" ? 1 : 0;
-    r.scores.is_s = r.hogwarts_house === "Slytherin" ? 1 : 0;
-    r.scores.is_g = r.hogwarts_house === "Gryffindor" ? 1 : 0;
-    r.scores.is_h = r.hogwarts_house === "Hufflepuff" ? 1 : 0;  
+    if (r.hogwarts_house) {
+      _.each(HouseToKey, (key, house) => {
+        r.scores[key] = r.hogwarts_house === house ? 1 : 0;
+      });
+    }
   }
 }

@@ -50,6 +50,30 @@ export namespace Stats {
     };
   }
 
+  export function derive_features_covariances(feature_stats: FeatureStats[], data: StudentRaw[]) {
+    return feature_stats.map((f1, i) => {
+      return feature_stats.map((f2, j) => {
+        let n = 0;
+        const variance = (i == j) ? f1.std ** 2 : data.reduce((sum, s) => {
+          const v1 = s.scores[f1.name];
+          const v2 = s.scores[f2.name];
+          if (_.isFinite(v1) && _.isFinite(v2)) {
+            n += 1;
+            return sum + (v1 - f1.mean) * (v2 - f2.mean);
+          } else {
+            return sum;
+          }
+        }, 0) / n;
+        return {
+          f1: f1.name,
+          f2: f2.name,
+          variance,
+          cor: variance / f1.std / f2.std,
+        };
+      });
+    });
+  }
+
   /**
    * FeatureStats に含まれる各統計量を1行ずつにまとめて表示する.
    * @param feature_stats 
@@ -131,7 +155,7 @@ export namespace Stats {
       const y = s.scores[feature_y.name];
       if (!_.isFinite(x) || !_.isFinite(y)) { return null; }
       count += 1;
-      return { x, y, fill: colorForStudent(s), r: s.corrected ? 4 : 16 };
+      return { x, y, fill: colorForStudent(s), r: typeof s.corrected === "boolean" ? (s.corrected ? 4 : 16) : null };
     }).compact().value();
     const box: Box = {
       p1: { x: feature_x.p0, y: feature_y.p0 },

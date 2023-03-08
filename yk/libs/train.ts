@@ -1,5 +1,6 @@
 import * as _ from "lodash"
-import { FeatureStats, StudentRaw } from "./definitions";
+import { FeatureStats, KeyToHouse, StudentRaw } from "./definitions";
+import { Stats } from "./stats";
 
 /**
  * データの前(とは限らない)処理
@@ -41,6 +42,20 @@ export namespace Preprocessor {
       const j = Math.floor((data.length - i) * Math.random()) + i;
       [data[i], data[j]] = [data[j], data[i]];
     }
+  }
+
+  export function reduce_by_corelation(stats: FeatureStats[], students: StudentRaw[]) {
+    const useless_keys: { [K: string]: string } = {};
+    Stats.derive_features_covariances(stats, students).forEach((row, i) => {
+      row.forEach((r, j) => {
+        if (i < j && r.f1 !== r.f2 && Math.abs(r.cor) > 0.95) {
+          console.log("reduce:", r.f1, r.f2, r.variance, r.cor);
+          useless_keys[r.f2] = r.f2;
+        }
+      });
+    });
+    const reduced_stats = stats.filter(s => !useless_keys[s.name]);
+    return reduced_stats;
   }
 }
 
@@ -231,5 +246,13 @@ export namespace Validator {
       }
     }
     return { ok, no };
+  }
+
+  export function predict_house(weights: { [key in string]: number[] }, features: string[], student: StudentRaw) {
+    const probabilities = _.mapValues(weights, (ws) => logistic_likelihood(student, features, ws));
+    const predicted = _.maxBy(_.keys(probabilities), (key) => probabilities[key])!;
+    const house = KeyToHouse[predicted];
+    const score = probabilities[predicted] / _.reduce(probabilities, (s, p) => s + p, 0);
+    return house;
   }
 }
