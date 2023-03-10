@@ -42,13 +42,6 @@ class Model:
 
     def preprocess(self, x, y, is_train=True):
         if is_train:
-            # 欠損値の削除
-            # delete_indexes = []
-            # for i in range(x.shape[0]):
-            #     if any(np.isnan(x[i])):
-            #         delete_indexes.append(i)
-            # x = np.delete(x, delete_indexes, 0)
-            # y = np.delete(y, delete_indexes, 0)
             # 欠損値補間のための準備
             self.data_means = []
             for i in range(x.shape[1]):
@@ -66,8 +59,6 @@ class Model:
 
 
     def train(self, x, y, epoch=100, verbose=False, seed=None):
-        # self.scaler.fit(x)
-        # x = self._convert_x(x)
         for key, model in self.model.items():
             map_func = lambda x: 1 if x == key else 0
             y_map = np.vectorize(map_func)(y)
@@ -75,7 +66,6 @@ class Model:
 
 
     def predict(self, x):
-        # x = self._convert_x(x)
         pred_list = [[], [], [], []]
         map_dict = {
             'Slytherin': 0,
