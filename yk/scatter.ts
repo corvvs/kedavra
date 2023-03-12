@@ -9,6 +9,7 @@ import { IO } from "./libs/io";
 import { Flow } from "./libs/flow";
 import { Utils } from "./libs/utils";
 import { Spider } from "./libs/spider";
+import { exec } from "child_process";
 
 /**
  * 便宜上のメイン関数
@@ -70,7 +71,13 @@ function main() {
   const scatter_svg = svg.render();
 
   // [ファイルに書き出す]
-  IO.save(`scatter_${feature_x}_vs_${feature_y}.svg`, scatter_svg);
+  const out_path = `scatter_${feature_x}_vs_${feature_y}.svg`;
+  IO.save(out_path, scatter_svg);
+  exec(`open ${out_path}`, (error, strout, strerr) => {
+    if (error) {
+      console.error(strerr);
+    }
+  });
 }
 
 try {

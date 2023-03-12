@@ -9,6 +9,7 @@ import { IO } from "./libs/io";
 import { Flow } from "./libs/flow";
 import { Utils } from "./libs/utils";
 import { Spider } from "./libs/spider";
+import { exec } from "child_process";
 
 /**
  * 便宜上のメイン関数
@@ -64,7 +65,13 @@ function main() {
   const pair_plot_svg = svg.render();
 
   // [ファイルに書き出す]
-  IO.save("pair_plot.svg", pair_plot_svg);
+  const out_path = "pair_plot.svg";
+  IO.save(out_path, pair_plot_svg);
+  exec(`open ${out_path}`, (error, strout, strerr) => {
+    if (error) {
+      console.error(strerr);
+    }
+  });
 }
 
 try {

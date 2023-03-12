@@ -9,6 +9,7 @@ import { Geometric } from "./libs/geometric";
 import { Box } from "./libs/definitions";
 import { IO } from "./libs/io";
 import { Spider } from "./libs/spider";
+import { exec } from "child_process";
 
 /**
  * 便宜上のメイン関数
@@ -64,7 +65,13 @@ function main() {
   const histo_svg = svg.render();
 
   // [ファイルに書き出す]
-  IO.save(`histogram_${feature}.svg`, histo_svg);
+  const out_path = `histogram_${feature}.svg`;
+  IO.save(out_path, histo_svg);
+  exec(`open ${out_path}`, (error, strout, strerr) => {
+    if (error) {
+      console.error(strerr);
+    }
+  });
 }
 
 try {
