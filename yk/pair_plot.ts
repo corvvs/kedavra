@@ -8,8 +8,7 @@ import { Geometric } from "./libs/geometric";
 import { IO } from "./libs/io";
 import { Flow } from "./libs/flow";
 import { Utils } from "./libs/utils";
-
-const SvgBuilder = require('svg-builder')
+import { Spider } from "./libs/spider";
 
 /**
  * 便宜上のメイン関数
@@ -57,7 +56,8 @@ function main() {
     p2: { x: width * float_features.length, y: height * float_features.length },
   };
   const dimension = Geometric.formDimensionByBox(box);
-  const svg = SvgBuilder.width(dimension.width).height(dimension.height);  
+  
+  const svg = new Spider(dimension);
 
   // [SVGの作成]
   Graph.drawPairPlot(svg, { width, height }, raw_students, feature_stats);

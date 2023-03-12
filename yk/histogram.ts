@@ -8,8 +8,7 @@ import { Graph } from "./libs/graph";
 import { Geometric } from "./libs/geometric";
 import { Box } from "./libs/definitions";
 import { IO } from "./libs/io";
-
-const SvgBuilder = require('svg-builder')
+import { Spider } from "./libs/spider";
 
 /**
  * 便宜上のメイン関数
@@ -60,7 +59,7 @@ function main() {
     p2: { x: 600, y: 600 },
   };
   const dimension = Geometric.formDimensionByBox(box);
-  const svg = SvgBuilder.width(dimension.width).height(dimension.height);
+  const svg = new Spider(dimension);
   Graph.drawHistogram(svg, box, histo);
   const histo_svg = svg.render();
 

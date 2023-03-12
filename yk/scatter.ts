@@ -8,8 +8,7 @@ import { Geometric } from "./libs/geometric";
 import { IO } from "./libs/io";
 import { Flow } from "./libs/flow";
 import { Utils } from "./libs/utils";
-
-const SvgBuilder = require('svg-builder')
+import { Spider } from "./libs/spider";
 
 /**
  * 便宜上のメイン関数
@@ -66,7 +65,7 @@ function main() {
     p2: { x: 600, y: 600 },
   };
   const dimension = Geometric.formDimensionByBox(box);
-  const svg = SvgBuilder.width(dimension.width).height(dimension.height);
+  const svg = new Spider(dimension);
   Graph.drawScatter(svg, box, paired_data, { xLabel: true, yLabel: true });
   const scatter_svg = svg.render();
 
