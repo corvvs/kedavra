@@ -1,6 +1,9 @@
 NAMES	:= describe histogram scatter pair_plot logreg_train logreg_predict
 
-all:	$(NAMES)
+all:	install $(NAMES)
+
+install:
+	npm i
 
 predict:	logreg_predict
 	node logreg_predict.js datasets/dataset_test.csv
