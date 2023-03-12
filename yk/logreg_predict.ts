@@ -104,5 +104,9 @@ function main() {
 try {
   main();
 } catch (e) {
-  console.error(e);
+  if (e instanceof Error) {
+    console.error(`[${e.name}]`, e.message);
+  } else {
+    console.error(e);
+  }
 }
