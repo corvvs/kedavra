@@ -32,5 +32,5 @@ logreg_predict:
 svg:
 	tsc $@.ts
 
-clean:
-	rm -rf *.js
+fclean:
+	rm -rf *.js libs/*.js
