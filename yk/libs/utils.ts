@@ -22,4 +22,10 @@ export namespace Utils {
       return str.substring(0, max_str_len);
     }
   }
+
+  export function average_vectors(vectors: number[][]): number[] {
+    return vectors
+      .reduce((vs, v) => vs.map((x, i) => x + v[i]), vectors[0].map(x => 0))
+      .map(x => x / vectors.length);
+  }
 }

@@ -178,7 +178,7 @@ export namespace Trainer {
     // バッチサイズ
     batch_size: number;
   } = {
-    delta_limit: 0.0001,
+    delta_limit: 0.00001,
     initial_learning_rate: 0.1,
     learning_rate_decay: 0.0001,
     batch_size: 32,
