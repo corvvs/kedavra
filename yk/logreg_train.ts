@@ -73,13 +73,18 @@ function main() {
   using_features.push("constant");
 
   // [学習]
-  const cv_division = 8;
   Preprocessor.shuffle(raw_students);
-  const results = _.map(_.range(cv_division), i => {
-    const from = Math.floor(raw_students.length / cv_division * i);
-    const to = Math.floor(raw_students.length / cv_division * (i + 1));
-    const students_validate = raw_students.slice(from, to);
-    const students_training = raw_students.filter((s, i) => i < from || to <= i);
+  const cv_test_rate = 0.25;
+  const n_test = Math.floor(raw_students.length * cv_test_rate);
+  const students_test = raw_students.slice(0, n_test);
+  const students_rest = raw_students.slice(n_test);
+  const cv_validation_division = 8;
+  const results = _(_.range(cv_validation_division)).map(i => {
+    const from = Math.floor(students_rest.length / cv_validation_division * i);
+    const to = Math.floor(students_rest.length / cv_validation_division * (i + 1));
+    const students_validate = students_rest.slice(from, to);
+    const students_training = students_rest.filter((s, i) => i < from || to <= i);
+    if (students_validate.length === 0 || students_training.length === 0) { return null; }
     console.log(i, students_training.length, from, to, students_validate.length);
     const house_key = ["is_g", "is_r", "is_h", "is_s"];
     const ws = _(house_key).keyBy(key => key).mapValues(key => {
@@ -99,7 +104,7 @@ function main() {
       console.log(key, ":", "[", ws.map(w => sprintf("%+1.2f", w)).join(", "), "]");
     });
     return { i, ws, precision };
-  });
+  }).compact().value();
 
   const ws = _.mapValues(results[0].ws, (ws, key) => {
     return Utils.average_vectors(results.map(r => r.ws[key]))
@@ -113,6 +118,11 @@ function main() {
   _.each(ws, (ws, key) => {
     console.log(key, ":", "[", ws.map(w => sprintf("%+1.2f", w)).join(", "), "]");
   });
+  {
+    const f_probability = (student: StudentRaw, weights: number[]) => Probability.logreg(student, using_features, weights);
+    const { ok, no } = Validator.validate_weights(ws, students_test, f_probability);
+    console.log("test: ", ok / (ok + no), `= ${ok} / (${ok} + ${no})`);
+  }
   {
     const f_probability = (student: StudentRaw, weights: number[]) => Probability.logreg(student, using_features, weights);
     const { ok, no } = Validator.validate_weights(ws, raw_students, f_probability);
