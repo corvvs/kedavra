@@ -1,5 +1,3 @@
-# memo
-
 ## ロジスティック回帰について
 
 - シグモイド関数：https://www.kamishima.net/mlmpyja/lr/sigmoid.html
